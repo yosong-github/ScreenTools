@@ -32,6 +32,17 @@ export function createControlService(dataDir: string, changed: () => void, showW
   let stopping = false
   const hardwareQueues = new Map<string, Promise<unknown>>()
   const readWorkers = new Map<NativeClient, string>()
+  const hardwareWorkers = new Map<
+    string,
+    { worker: NativeClient; idle?: ReturnType<typeof setTimeout> }
+  >()
+  function releaseWorker(id: string): void {
+    const entry = hardwareWorkers.get(id)
+    if (!entry) return
+    clearTimeout(entry.idle)
+    hardwareWorkers.delete(id)
+    entry.worker.terminateReadWorker()
+  }
   const probed = new Set<string>()
   const native = new NativeClient((error) => {
     if (!error) {
@@ -77,7 +88,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
       state.devices = await native.request<NativeDisplay[]>('snapshot')
       const ids = new Set(state.devices.map((d) => d.id))
       for (const id of probed) if (!ids.has(id)) probed.delete(id)
-      for (const [worker, id] of readWorkers) if (!ids.has(id)) worker.terminateReadWorker()
+      for (const id of hardwareWorkers.keys()) if (!ids.has(id)) releaseWorker(id)
       state.capabilities = Object.fromEntries(
         Object.entries(state.capabilities).filter(([id]) => ids.has(id)),
       )
@@ -94,7 +105,13 @@ export function createControlService(dataDir: string, changed: () => void, showW
       .catch(() => {})
       .then(async () => {
         if (stopping) throw new Error('应用正在退出')
-        const worker = new NativeClient()
+        let entry = hardwareWorkers.get(id)
+        if (!entry) {
+          entry = { worker: new NativeClient() }
+          hardwareWorkers.set(id, entry)
+        }
+        clearTimeout(entry.idle)
+        const { worker } = entry
         readWorkers.set(worker, id)
         try {
           const result = await worker.request<HardwareCapabilities>(
@@ -102,11 +119,31 @@ export function createControlService(dataDir: string, changed: () => void, showW
             setting ?? id,
             12000,
           )
-          if (state.devices.some((d) => d.id === id)) state.capabilities[id] = result
+          if (stopping || hardwareWorkers.get(id) !== entry)
+            throw new Error('设备通信已取消，请重新探测')
+          if (state.devices.some((d) => d.id === id)) {
+            // 快速写入仅回传当前参数，保留其他已经探测到的能力。
+            state.capabilities[id] =
+              setting?.feature === 'brightness' || setting?.feature === 'contrast'
+                ? { ...state.capabilities[id], ...result }
+                : result
+          }
+          state.error = null
           record(setting ? '硬件参数已提交；最新能力以重新读取为准' : '硬件能力探测完成')
+        } catch (error) {
+          if (hardwareWorkers.get(id) === entry) releaseWorker(id)
+          throw error
         } finally {
-          worker.terminateReadWorker()
           readWorkers.delete(worker)
+          if (hardwareWorkers.get(id) === entry) {
+            if (stopping || setting?.feature === 'inputSource' || setting?.feature === 'power')
+              releaseWorker(id)
+            else {
+              // 只复用进程，不缓存物理句柄；句柄仍在每次调用结束时释放。
+              entry.idle = setTimeout(() => releaseWorker(id), 30000)
+              entry.idle.unref()
+            }
+          }
         }
       })
     hardwareQueues.set(id, work)
@@ -214,9 +251,11 @@ export function createControlService(dataDir: string, changed: () => void, showW
             break
           case 'probe':
             await hardware(command.id)
-            break
+            return structuredClone(state)
           case 'hardware':
             await hardware(command.setting.id, command.setting)
+            if (command.setting.feature !== 'inputSource' && command.setting.feature !== 'power')
+              return structuredClone(state)
             break
           case 'save-profile': {
             if (
@@ -394,7 +433,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
     },
     async dispose() {
       stopping = true
-      for (const worker of readWorkers.keys()) worker.terminateReadWorker()
+      for (const id of hardwareWorkers.keys()) releaseWorker(id)
       globalShortcut.unregisterAll()
       await native.dispose()
       await io.catch(() => {})

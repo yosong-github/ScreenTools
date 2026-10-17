@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import koffi from 'koffi'
+import { writeContinuous } from './continuous-control'
 import { percentageToRaw, validateLayout } from './validation'
 import type {
   ChangePlan,
@@ -388,11 +389,32 @@ export function probe(id: string): HardwareCapabilities {
 }
 export function writeHardware(setting: HardwareSetting): HardwareCapabilities {
   return withPhysical(setting.id, (handle) => {
+    if (setting.feature === 'brightness' || setting.feature === 'contrast') {
+      const read = setting.feature === 'brightness' ? brightnessGet : contrastGet
+      const write = setting.feature === 'brightness' ? brightnessSet : contrastSet
+      const actual = writeContinuous(
+        setting.value,
+        () => {
+          const min = Buffer.alloc(4),
+            current = Buffer.alloc(4),
+            max = Buffer.alloc(4)
+          if (!read(handle, min, current, max))
+            throw new Error(`读取硬件参数失败，Windows 错误码 ${lastError()}`)
+          return {
+            min: min.readUInt32LE(),
+            max: max.readUInt32LE(),
+            current: current.readUInt32LE(),
+          }
+        },
+        (value) => {
+          if (!write(handle, value)) throw new Error(`硬件写入失败，Windows 错误码 ${lastError()}`)
+        },
+      )
+      return { [setting.feature]: actual }
+    }
     const capability = probeHandle(handle)[setting.feature]
     if (!capability) throw new Error('显示器未确认支持此功能')
     const value =
-      setting.feature === 'brightness' ||
-      setting.feature === 'contrast' ||
       setting.feature === 'volume'
         ? percentageToRaw(setting.value, capability.min, capability.max)
         : setting.value
@@ -402,12 +424,11 @@ export function writeHardware(setting: HardwareSetting): HardwareCapabilities {
         : value < capability.min || value > capability.max
     )
       throw new Error('参数超出显示器能力范围')
-    const ok =
-      setting.feature === 'brightness'
-        ? brightnessSet(handle, value)
-        : setting.feature === 'contrast'
-          ? contrastSet(handle, value)
-          : vcpSet(handle, { volume: 0x62, inputSource: 0x60, power: 0xd6 }[setting.feature], value)
+    const ok = vcpSet(
+      handle,
+      { volume: 0x62, inputSource: 0x60, power: 0xd6 }[setting.feature],
+      value,
+    )
     if (!ok) throw new Error(`硬件写入失败，Windows 错误码 ${lastError()}`)
     // 电源或输入切换后设备可能立即不可达，不伪造读取确认。
     return setting.feature === 'power' || setting.feature === 'inputSource'

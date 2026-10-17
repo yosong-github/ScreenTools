@@ -1,0 +1,2 @@
+# 文本文件统一使用 LF，避免 Windows Git 自动转换为 CRLF 导致格式检查失败。
+* text=auto eol=lf

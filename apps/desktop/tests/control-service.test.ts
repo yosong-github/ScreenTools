@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultSettings } from '@screentools/contracts'
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   write: vi.fn(),
   rename: vi.fn(),
   register: vi.fn(() => true),
+  created: vi.fn(),
+  terminate: vi.fn(),
 }))
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(),
@@ -25,9 +27,12 @@ vi.mock('electron', () => ({
 }))
 vi.mock('../src/main/services/native-client', () => ({
   NativeClient: class {
+    constructor() {
+      mocks.created()
+    }
     request = mocks.request
     dispose = vi.fn()
-    terminateReadWorker = vi.fn()
+    terminateReadWorker = mocks.terminate
   },
 }))
 import { createControlService } from '../src/main/services/control-service'
@@ -44,6 +49,7 @@ const device = {
   hdr: null,
 }
 describe('控制服务', () => {
+  afterEach(() => vi.useRealTimers())
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.read.mockRejectedValue(Object.assign(Error('missing'), { code: 'ENOENT' }))
@@ -56,6 +62,84 @@ describe('控制服务', () => {
           ? { token: 'test-token', expiresAt: Date.now() + 20000 }
           : {},
     )
+  })
+  it('连续调亮度复用进程，不重新枚举模式，也不覆盖其他能力', async () => {
+    const brightness = { min: 0, max: 100, current: 20 }
+    const contrast = { min: 0, max: 100, current: 40 }
+    mocks.request.mockImplementation(async (operation: string, payload?: { value: number }) =>
+      operation === 'snapshot'
+        ? [device]
+        : operation === 'probe'
+          ? { brightness, contrast }
+          : { brightness: { ...brightness, current: payload!.value } },
+    )
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      await service.execute({ type: 'probe', id: 'test' })
+      const created = mocks.created.mock.calls.length
+      mocks.request.mockClear()
+      await service.execute({
+        type: 'hardware',
+        setting: { id: 'test', feature: 'brightness', value: 50 },
+      })
+      await service.execute({
+        type: 'hardware',
+        setting: { id: 'test', feature: 'brightness', value: 60 },
+      })
+      expect(mocks.created).toHaveBeenCalledTimes(created)
+      expect(mocks.request.mock.calls.map((c) => c[0])).toEqual(['hardware', 'hardware'])
+      expect(service.state.capabilities.test).toEqual({
+        brightness: { ...brightness, current: 60 },
+        contrast,
+      })
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('超时回收进程、保留最后成功值，下一次操作重新创建进程', async () => {
+    const brightness = { min: 0, max: 100, current: 20 }
+    mocks.request.mockImplementation(async (operation: string) =>
+      operation === 'snapshot' ? [device] : { brightness },
+    )
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      await service.execute({ type: 'probe', id: 'test' })
+      const created = mocks.created.mock.calls.length
+      mocks.request.mockRejectedValueOnce(Error('设备响应超时'))
+      await expect(
+        service.execute({
+          type: 'hardware',
+          setting: { id: 'test', feature: 'brightness', value: 50 },
+        }),
+      ).rejects.toThrow('设备响应超时')
+      expect(mocks.terminate).toHaveBeenCalledOnce()
+      expect(service.state.capabilities.test?.brightness).toEqual(brightness)
+      await service.execute({ type: 'probe', id: 'test' })
+      expect(mocks.created).toHaveBeenCalledTimes(created + 1)
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('闲置 30 秒或设备断开时回收复用进程', async () => {
+    vi.useFakeTimers()
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      await service.execute({ type: 'probe', id: 'test' })
+      vi.advanceTimersByTime(29999)
+      expect(mocks.terminate).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(1)
+      expect(mocks.terminate).toHaveBeenCalledOnce()
+      await service.execute({ type: 'probe', id: 'test' })
+      mocks.request.mockResolvedValueOnce([])
+      await service.refresh()
+      expect(mocks.terminate).toHaveBeenCalledTimes(2)
+      expect(service.state.capabilities).toEqual({})
+    } finally {
+      await service.dispose()
+    }
   })
   it('系统配置确认前不执行方案硬件写入', async () => {
     const service = createControlService('test-data', vi.fn(), vi.fn())
