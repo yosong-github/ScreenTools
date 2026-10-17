@@ -4,30 +4,351 @@
   background: #101827;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  color-scheme: dark;
 }
-
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
 }
-
-main {
-  padding: 64px;
+button {
+  font: inherit;
+  cursor: pointer;
 }
-
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+button:focus-visible,
+g:focus-visible {
+  outline: 2px solid #8abfff;
+  outline-offset: 4px;
+}
+.app-shell {
+  max-width: 1300px;
+  margin: auto;
+  padding: 36px 40px;
+}
+.page-heading,
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
 .brand {
+  font-size: 12px;
+  letter-spacing: 0.12em;
   color: #8abfff;
+  font-weight: 700;
+}
+.brand span {
+  color: #8c9ab0;
+  margin-left: 12px;
+  font-weight: 400;
+}
+h1 {
+  margin: 16px 0 10px;
+  font-size: 30px;
   font-weight: 600;
 }
-
-h1 {
-  font-size: 40px;
+h2 {
+  font-size: 17px;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
-
-p,
-small {
+h3 {
+  font-size: 14px;
+}
+.subtitle,
+.hint,
+footer {
+  color: #93a5bd;
+  font-size: 13px;
   line-height: 1.7;
 }
-
-small {
-  color: #a4b0c4;
+.control-panel {
+  margin-top: 24px;
+  padding: 24px;
+}
+.control-panel button,
+.confirm-overlay button {
+  background: #203c5c;
+  color: #e8f1ff;
+  border: 1px solid #416485;
+  border-radius: 7px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.control-panel button:hover:not(:disabled),
+.confirm-overlay button:hover:not(:disabled) {
+  background: #2d547b;
+}
+.control-panel button:disabled,
+.confirm-overlay button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.control-panel :focus-visible,
+.confirm-overlay :focus-visible {
+  outline: 2px solid #74d9d2;
+  outline-offset: 3px;
+}
+.control-panel label {
+  display: block;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.control-panel input:not([type='checkbox']),
+.control-panel select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  background: #0f1b2b;
+  color: #dce8f6;
+  border: 1px solid #3b526f;
+  border-radius: 6px;
+}
+.control-panel fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.control-panel hr {
+  border: 0;
+  border-top: 1px solid #2b3b51;
+  margin: 24px 0;
+}
+.control-panel details {
+  margin-top: 24px;
+}
+.control-panel summary {
+  cursor: pointer;
+  padding: 16px 0;
+}
+.control-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.operation-log {
+  max-height: 240px;
+  overflow: auto;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.editable-layout {
+  width: 100%;
+  height: 220px;
+  touch-action: none;
+  background: #0c1625;
+  border-radius: 8px;
+}
+.editable-layout rect {
+  fill: #1d324d;
+  stroke: #728ba8;
+  stroke-width: 8;
+}
+.editable-layout rect.chosen {
+  fill: #264b6e;
+  stroke: #74d9d2;
+}
+.editable-layout text {
+  fill: #eef6ff;
+  pointer-events: none;
+}
+.editable-layout g {
+  cursor: move;
+}
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #000b;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.confirm-overlay .panel {
+  padding: 32px;
+  max-width: 560px;
+}
+.refresh,
+.error button {
+  background: #254d7c;
+  color: #edf5ff;
+  border: 1px solid #456f9f;
+  border-radius: 8px;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 16px;
+  font-size: 13px;
+  color: #b6c4d6;
+}
+.summary > span:not(.status-dot) {
+  margin-left: auto;
+  color: #93a5bd;
+  font-size: 12px;
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #71d8bb;
+}
+.panel {
+  border: 1px solid #2b3b51;
+  border-radius: 12px;
+  background: #162134;
+  padding: 24px;
+}
+.display-layout {
+  width: 100%;
+  height: 230px;
+  display: block;
+  margin-top: 16px;
+}
+.display-layout g {
+  cursor: pointer;
+}
+.display-layout rect {
+  fill: #203751;
+  stroke: #587598;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+.display-layout .selected rect {
+  fill: #254d7c;
+  stroke: #91c3ff;
+}
+.display-layout text {
+  fill: #dfeeff;
+  pointer-events: none;
+}
+.device-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(340px, 1.5fr);
+  gap: 20px;
+  margin-top: 20px;
+  align-items: start;
+}
+.devices {
+  display: grid;
+  gap: 12px;
+}
+.device-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid #2b3b51;
+  background: #162134;
+  color: #e8eef8;
+  border-radius: 10px;
+  text-align: left;
+  padding: 20px 16px;
+}
+.device-card.active {
+  border-color: #7aa9e6;
+  background: #1c304b;
+}
+.device-number {
+  background: #2b4666;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.device-copy {
+  min-width: 0;
+  flex: 1;
+}
+.device-copy strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.device-copy small {
+  display: block;
+  color: #9cabc0;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.badge {
+  border-radius: 4px;
+  background: #294766;
+  color: #b6d7fc;
+  padding: 4px 7px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+dl {
+  margin: 22px 0;
+}
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #243449;
+  padding: 10px 0;
+  font-size: 13px;
+}
+dt {
+  color: #93a5bd;
+}
+dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.capabilities {
+  border-top: 1px solid #2b3b51;
+  margin-top: 16px;
+}
+.capabilities p {
+  color: #93a5bd;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.empty {
+  text-align: center;
+  padding: 70px 20px;
+  color: #b6c4d6;
+}
+.error {
+  background: #44272d;
+  border: 1px solid #b57378;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 20px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  font-size: 12px;
+}
+@media (max-width: 850px) {
+  .app-shell {
+    padding: 24px;
+  }
+  .device-grid {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    font-size: 25px;
+  }
 }

@@ -1,0 +1,22 @@
+appId: com.screentools.desktop
+productName: ScreenTools
+directories:
+  output: ../../release
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - node_modules/koffi/**
+  - node_modules/@koromix/**
+# Koffi 使用预编译 Node-API 二进制，不在用户机器上调用 C++ 编译器。
+npmRebuild: false
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  runAfterFinish: false
+publish: null

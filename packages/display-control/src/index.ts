@@ -1,11 +1,7 @@
-import type { DisplaySummary } from '@screentools/contracts'
+import type { DisplaySnapshot } from '@screentools/contracts'
 
 export interface DisplayControlService {
-  listDisplays(): Promise<DisplaySummary[]>
-}
-
-export class EmptyDisplayControlService implements DisplayControlService {
-  async listDisplays(): Promise<DisplaySummary[]> {
-    return []
-  }
+  getSnapshot(): Promise<DisplaySnapshot>
+  subscribe(listener: () => void): () => void
+  dispose(): void
 }

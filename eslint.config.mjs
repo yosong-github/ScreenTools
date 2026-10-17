@@ -7,9 +7,11 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   {
     ignores: [
+      '**/.cache/**',
       '**/.pnpm-store/**',
       '**/dist/**',
       '**/out/**',
+      '**/release/**',
       '**/coverage/**',
       '**/node_modules/**',
     ],

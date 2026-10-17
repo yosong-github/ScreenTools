@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "pnpm --filter @screentools/desktop dev",
     "build": "pnpm -r --if-present build",
+    "build:unpack": "pnpm --filter @screentools/desktop build:unpack",
+    "build:win": "pnpm --filter @screentools/desktop build:win",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

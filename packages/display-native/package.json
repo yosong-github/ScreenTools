@@ -4,7 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./windows": "./src/windows.ts"
+  },
+  "dependencies": {
+    "@screentools/contracts": "workspace:*",
+    "koffi": "3.3.3"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

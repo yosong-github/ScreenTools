@@ -1,0 +1,88 @@
+// 共享类型只参与编译期检查，不进行运行时数据校验。
+export interface DisplayMode {
+  width: number
+  height: number
+  refreshRate: number
+}
+export interface DisplaySetting {
+  id: string
+  mode: DisplayMode
+  x: number
+  y: number
+  rotation: 0 | 90 | 180 | 270
+  primary: boolean
+  hdrEnabled?: boolean
+}
+export type HardwareFeature = 'brightness' | 'contrast' | 'volume' | 'inputSource' | 'power'
+export interface HardwareSetting {
+  id: string
+  feature: HardwareFeature
+  value: number
+}
+export interface ChangePlan {
+  topology?: 'extend' | 'clone' | 'internal' | 'external'
+  displays: DisplaySetting[]
+  hardware: HardwareSetting[]
+}
+export interface DisplayProfile {
+  id: string
+  name: string
+  plan: ChangePlan
+}
+export interface AppSettings {
+  aliases: Record<string, string>
+  closeToTray: boolean
+  launchAtLogin: boolean
+  shortcut: string
+  startupProfileId: string | null
+  connectProfileId: string | null
+}
+export const defaultSettings: AppSettings = {
+  aliases: {},
+  closeToTray: true,
+  launchAtLogin: false,
+  shortcut: 'CommandOrControl+Alt+D',
+  startupProfileId: null,
+  connectProfileId: null,
+}
+export type ControlCommand =
+  | { type: 'refresh' }
+  | { type: 'apply'; plan: ChangePlan }
+  | { type: 'confirm'; token: string }
+  | { type: 'revert'; token: string }
+  | { type: 'probe'; id: string }
+  | { type: 'hardware'; setting: HardwareSetting }
+  | { type: 'save-profile'; profile: DisplayProfile }
+  | { type: 'delete-profile'; id: string }
+  | { type: 'apply-profile'; id: string }
+  | { type: 'settings'; settings: AppSettings }
+  | { type: 'export-diagnostics' }
+  | { type: 'copy-diagnostics' }
+  | { type: 'import-profiles' }
+  | { type: 'export-profiles' }
+export interface NativeDisplay extends DisplaySetting {
+  name: string
+  connection: string
+  modes: DisplayMode[]
+  hdr: { supported: boolean; enabled: boolean } | null
+}
+export interface HardwareValue {
+  min: number
+  max: number
+  current: number
+  values?: number[] | undefined
+}
+export type HardwareCapabilities = Partial<Record<HardwareFeature, HardwareValue | undefined>>
+export interface PendingChange {
+  token: string
+  expiresAt: number
+}
+export interface ControlState {
+  devices: NativeDisplay[]
+  profiles: DisplayProfile[]
+  settings: AppSettings
+  capabilities: Record<string, HardwareCapabilities>
+  pending: PendingChange | null
+  error: string | null
+  logs: { time: string; message: string }[]
+}

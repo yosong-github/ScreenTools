@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { BrowserWindow, shell } from 'electron'
 import { is } from '@electron-toolkit/utils'
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow(shouldHideOnClose: () => boolean = () => false): BrowserWindow {
   const window = new BrowserWindow({
     width: 1040,
     height: 720,
@@ -22,6 +22,14 @@ export function createMainWindow(): BrowserWindow {
 
   // 等待首帧准备完成后显示，避免启动闪烁。
   window.once('ready-to-show', () => window.show())
+  window.on('close', (event) => {
+    if (shouldHideOnClose()) {
+      event.preventDefault()
+      window.hide()
+    }
+  })
+  // 页面导航只能由应用主动发起，避免外部页面获得预加载接口。
+  window.webContents.on('will-navigate', (event) => event.preventDefault())
   window.webContents.on('preload-error', (_event, path, error) => {
     console.error(`预加载脚本执行失败：${path}`, error)
   })
