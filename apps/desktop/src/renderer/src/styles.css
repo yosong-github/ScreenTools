@@ -1,132 +1,33 @@
 :root {
-  font-family:
-    Inter,
-    'Segoe UI',
-    'Microsoft YaHei',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
   color: #e8eef8;
-  background: #08101e;
+  background: #101827;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: radial-gradient(circle at 10% 0%, rgb(38 96 164 / 28%), transparent 36rem), #08101e;
 }
 
-button,
-input {
-  font: inherit;
+main {
+  padding: 64px;
 }
 
-.app-shell {
-  width: min(1120px, 100%);
-  margin: 0 auto;
-  padding: 64px 48px 36px;
-}
-
-.hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 48px;
-}
-
-.eyebrow {
-  margin: 0 0 10px;
-  color: #71b4ff;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.brand {
+  color: #8abfff;
+  font-weight: 600;
 }
 
 h1 {
-  margin: 0;
-  font-size: clamp(34px, 5vw, 58px);
-  line-height: 1.08;
+  font-size: 40px;
 }
 
-.subtitle {
-  margin: 18px 0 0;
-  color: #9daec4;
-  font-size: 18px;
+p,
+small {
+  line-height: 1.7;
 }
 
-.status {
-  flex: 0 0 auto;
-  padding: 9px 13px;
-  border: 1px solid #28466b;
-  border-radius: 999px;
-  color: #a8cfff;
-  background: rgb(23 54 93 / 52%);
-  font-size: 13px;
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.feature-card {
-  min-height: 250px;
-  padding: 22px;
-  border: 1px solid #1e3350;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgb(20 36 59 / 92%), rgb(11 24 42 / 92%));
-  box-shadow: 0 18px 50px rgb(0 0 0 / 20%);
-}
-
-.placeholder {
-  height: 112px;
-  margin-bottom: 22px;
-  border: 1px dashed #35577e;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgb(47 117 181 / 18%), rgb(113 180 255 / 4%));
-}
-
-h2 {
-  margin: 0 0 9px;
-  font-size: 19px;
-}
-
-.feature-card p,
-footer {
-  color: #94a7bf;
-  line-height: 1.65;
-}
-
-.feature-card p {
-  margin: 0;
-}
-
-footer {
-  margin-top: 34px;
-  font-size: 13px;
-}
-
-@media (max-width: 760px) {
-  .app-shell {
-    padding: 36px 24px 28px;
-  }
-
-  .hero {
-    flex-direction: column;
-  }
-
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
+small {
+  color: #a4b0c4;
 }

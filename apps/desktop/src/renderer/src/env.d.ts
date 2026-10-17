@@ -4,7 +4,7 @@ import type { ScreenToolsApi } from '@screentools/contracts'
 
 declare global {
   interface Window {
-    screenTools: ScreenToolsApi
+    readonly screenTools: Readonly<ScreenToolsApi>
   }
 }
 

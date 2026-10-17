@@ -1,59 +1,55 @@
-import { join } from 'node:path'
-import { app, BrowserWindow, shell } from 'electron'
+import { app } from 'electron'
+import type { BrowserWindow } from 'electron'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import { createMainWindow } from './window'
 
 let mainWindow: BrowserWindow | null = null
 
-function createWindow(): void {
-  mainWindow = new BrowserWindow({
-    width: 1040,
-    height: 720,
-    minWidth: 860,
-    minHeight: 600,
-    show: false,
-    backgroundColor: '#0b1220',
-    title: 'ScreenTools',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  })
+function showMainWindow(): void {
+  if (!app.isReady()) return
 
-  mainWindow.once('ready-to-show', () => mainWindow?.show())
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url)
-    return { action: 'deny' }
-  })
-
-  if (process.env.ELECTRON_RENDERER_URL) {
-    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  if (!mainWindow) {
+    mainWindow = createMainWindow()
+    mainWindow.on('closed', () => {
+      mainWindow = null
+    })
+    return
   }
+
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
 }
 
-const hasSingleInstanceLock = app.requestSingleInstanceLock()
+// 隔离开发与正式版本的数据目录，避免缓存和单实例锁冲突；显式指定的目录优先。
+if (is.dev && !app.commandLine.hasSwitch('user-data-dir')) {
+  app.setPath('userData', `${app.getPath('userData')}-dev`)
+}
 
-if (!hasSingleInstanceLock) {
+if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.show()
-      mainWindow.focus()
-    }
-  })
+  app.on('second-instance', showMainWindow)
 
-  void app.whenReady().then(() => {
-    createWindow()
+  void app
+    .whenReady()
+    .then(() => {
+      electronApp.setAppUserModelId('com.screentools.desktop')
 
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      // 开发环境支持 F12 调试，正式环境禁用刷新快捷键。
+      app.on('browser-window-created', (_event, window) => {
+        optimizer.watchWindowShortcuts(window)
+      })
+
+      showMainWindow()
+      app.on('activate', showMainWindow)
     })
-  })
+    .catch((error: unknown) => {
+      console.error('应用启动失败：', error)
+      app.exit(1)
+    })
 
+  // macOS 关闭窗口后保留应用，可通过 Dock 再次打开。
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
   })
