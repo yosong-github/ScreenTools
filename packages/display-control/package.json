@@ -1,0 +1,17 @@
+{
+  "name": "@screentools/display-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@screentools/contracts": "workspace:*",
+    "@screentools/display-native": "workspace:*"
+  }
+}
