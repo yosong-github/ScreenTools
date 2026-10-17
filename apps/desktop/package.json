@@ -10,6 +10,7 @@
     "build": "electron-vite build",
     "build:unpack": "pnpm build && electron-builder --win --x64 --dir --publish never",
     "build:win": "pnpm build && electron-builder --win --x64 --publish never",
+    "build:mac": "pnpm build && electron-builder --mac --publish never",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.web.json",
     "postinstall": "install-electron"

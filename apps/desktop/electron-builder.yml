@@ -1,5 +1,6 @@
 appId: com.screentools.desktop
 productName: ScreenTools
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: ../../release
 files:
@@ -19,4 +20,13 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   runAfterFinish: false
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+    - zip
+  # 无开发者证书的测试包使用 ad-hoc 签名，不进行 Apple 公证。
+  identity: '-'
+  hardenedRuntime: false
+  notarize: false
 publish: null
