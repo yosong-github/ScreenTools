@@ -22,6 +22,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
     devices: [],
     profiles: [],
     settings: { ...defaultSettings, aliases: {} },
+    launchAtLoginAvailable: app.isPackaged && ['win32', 'darwin'].includes(process.platform),
     capabilities: {},
     pending: null,
     error: null,
@@ -342,10 +343,14 @@ export function createControlService(dataDir: string, changed: () => void, showW
             break
           }
           case 'settings':
-            if (command.settings.launchAtLogin && !app.isPackaged)
+            if (command.settings.launchAtLogin && !state.launchAtLoginAvailable)
               throw new Error('开机启动仅适用于已安装版本')
             registerShortcut(command.settings)
-            app.setLoginItemSettings({ openAtLogin: command.settings.launchAtLogin })
+            if (
+              state.launchAtLoginAvailable &&
+              command.settings.launchAtLogin !== before.settings.launchAtLogin
+            )
+              app.setLoginItemSettings({ openAtLogin: command.settings.launchAtLogin })
             state.settings = command.settings
             await save()
             record('应用设置已保存')
@@ -406,7 +411,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
         if (command.type === 'settings') {
           try {
             registerShortcut(before.settings)
-            app.setLoginItemSettings({ openAtLogin: before.settings.launchAtLogin })
+            if (state.launchAtLoginAvailable)
+              app.setLoginItemSettings({ openAtLogin: before.settings.launchAtLogin })
           } catch {
             /* 回退失败仍保留旧持久化配置。 */
           }
@@ -446,6 +452,17 @@ export function createControlService(dataDir: string, changed: () => void, showW
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         validStorage = false
         record('本地配置无法读取，已保留原文件并使用默认设置')
+      }
+    }
+    if (state.launchAtLoginAvailable) {
+      try {
+        // Windows 启动应用可在系统设置中单独关闭，以系统中的实际状态为准。
+        const loginItem = app.getLoginItemSettings()
+        state.settings.launchAtLogin =
+          loginItem.openAtLogin &&
+          (process.platform !== 'win32' || loginItem.executableWillLaunchAtLogin)
+      } catch {
+        record('开机启动状态无法读取')
       }
     }
     try {

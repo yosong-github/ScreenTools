@@ -30,6 +30,12 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
     <template v-else-if="name === 'refresh'">
       <path d="M20 11a8 8 0 1 0-2.3 6.7M20 4v7h-7" />
     </template>
+    <template v-else-if="name === 'settings'">
+      <path
+        d="M10.2 2.7h3.6l.7 2.1c.5.2 1 .4 1.5.7l2-.9 2.5 2.5-.9 2c.3.5.5 1 .7 1.5l2.1.7v3.6l-2.1.7c-.2.5-.4 1-.7 1.5l.9 2-2.5 2.5-2-.9c-.5.3-1 .5-1.5.7l-.7 2.1h-3.6l-.7-2.1c-.5-.2-1-.4-1.5-.7l-2 .9-2.5-2.5.9-2c-.3-.5-.5-1-.7-1.5l-2.1-.7v-3.6l2.1-.7c.2-.5.4-1 .7-1.5l-.9-2 2.5-2.5 2 .9c.5-.3 1-.5 1.5-.7l.7-2.1Z"
+      />
+      <circle cx="12" cy="12" r="3" />
+    </template>
     <template v-else-if="name === 'sun'">
       <circle cx="12" cy="12" r="4" />
       <path

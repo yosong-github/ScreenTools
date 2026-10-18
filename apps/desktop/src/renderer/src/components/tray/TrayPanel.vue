@@ -17,12 +17,14 @@ const tabs: { id: Tab; icon: string; label: string }[] = [
 const ScreenInfoPage = defineAsyncComponent(() => import('./pages/ScreenInfoPage.vue'))
 const PictureSettingsPage = defineAsyncComponent(() => import('./pages/PictureSettingsPage.vue'))
 const DisplayModesPage = defineAsyncComponent(() => import('./pages/DisplayModesPage.vue'))
+const AppSettingsPage = defineAsyncComponent(() => import('./pages/AppSettingsPage.vue'))
 
 const controls = useControlsStore()
 const displaysStore = useDisplaysStore()
 const { state, busy, error: controlError } = storeToRefs(controls)
 const { displays, loading, error: displayError } = storeToRefs(displaysStore)
 const tab = shallowRef<Tab>('info')
+const settingsOpen = shallowRef(false)
 const selectedId = shallowRef('')
 const now = shallowRef(Date.now())
 let clock: ReturnType<typeof setInterval> | undefined
@@ -110,7 +112,17 @@ onUnmounted(() => {
         <p :title="subtitle">{{ subtitle }}</p>
       </div>
       <button
-        class="header-icon round"
+        class="header-icon"
+        :class="{ active: settingsOpen }"
+        :aria-label="settingsOpen ? '返回显示器控制' : '打开设置'"
+        :title="settingsOpen ? '返回显示器控制' : '打开设置'"
+        :aria-pressed="settingsOpen"
+        @click="settingsOpen = !settingsOpen"
+      >
+        <PanelIcon name="settings" :size="20" />
+      </button>
+      <button
+        class="header-icon"
         aria-label="收起面板"
         title="收起面板"
         @click="screenTools.hidePanel()"
@@ -118,7 +130,7 @@ onUnmounted(() => {
         <PanelIcon name="power" :size="21" />
       </button>
     </header>
-    <nav class="tab-bar" role="tablist" aria-label="显示器控制页面">
+    <nav v-if="!settingsOpen" class="tab-bar" role="tablist" aria-label="显示器控制页面">
       <button
         v-for="item in tabs"
         :key="item.id"
@@ -132,8 +144,20 @@ onUnmounted(() => {
         <PanelIcon :name="item.icon" :size="21" /><span>{{ item.label }}</span>
       </button>
     </nav>
+    <div v-else class="settings-bar">
+      <button aria-label="返回显示器控制" title="返回显示器控制" @click="settingsOpen = false">
+        <PanelIcon name="chevron-left" :size="19" />
+      </button>
+      <strong>应用设置</strong>
+    </div>
     <div class="page-content">
-      <div v-if="!selected && !displays.length" class="empty-state">
+      <AppSettingsPage
+        v-if="settingsOpen"
+        :settings="state?.settings"
+        :available="state?.launchAtLoginAvailable ?? false"
+        :locked="locked"
+      />
+      <div v-else-if="!selected && !displays.length" class="empty-state">
         <PanelIcon name="monitor" :size="42" />
         <h2>等待显示器信息</h2>
         <p>{{ loading ? '正在连接显示器服务…' : '连接显示器后刷新设备列表。' }}</p>

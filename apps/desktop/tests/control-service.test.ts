@@ -8,6 +8,11 @@ const mocks = vi.hoisted(() => ({
   register: vi.fn(() => true),
   created: vi.fn(),
   terminate: vi.fn(),
+  loginItem: {
+    isPackaged: false,
+    get: vi.fn(() => ({ openAtLogin: false, executableWillLaunchAtLogin: false })),
+    set: vi.fn(),
+  },
 }))
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(),
@@ -16,7 +21,14 @@ vi.mock('node:fs/promises', () => ({
   rename: mocks.rename,
 }))
 vi.mock('electron', () => ({
-  app: { isPackaged: false, setLoginItemSettings: vi.fn(), getVersion: () => 'test' },
+  app: {
+    get isPackaged() {
+      return mocks.loginItem.isPackaged
+    },
+    getLoginItemSettings: mocks.loginItem.get,
+    setLoginItemSettings: mocks.loginItem.set,
+    getVersion: () => 'test',
+  },
   dialog: { showSaveDialog: vi.fn(), showOpenDialog: vi.fn() },
   globalShortcut: {
     register: mocks.register,
@@ -52,6 +64,11 @@ describe('控制服务', () => {
   afterEach(() => vi.useRealTimers())
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.loginItem.isPackaged = false
+    mocks.loginItem.get.mockReturnValue({
+      openAtLogin: false,
+      executableWillLaunchAtLogin: false,
+    })
     mocks.read.mockRejectedValue(Object.assign(Error('missing'), { code: 'ENOENT' }))
     mocks.write.mockResolvedValue(undefined)
     mocks.rename.mockResolvedValue(undefined)
@@ -241,5 +258,48 @@ describe('控制服务', () => {
     )
     expect(broken.state.settings).toEqual(defaultSettings)
     await broken.dispose()
+  })
+  it('安装版设置开机自启动，并在失败时恢复系统设置', async () => {
+    mocks.loginItem.isPackaged = true
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(service.state.launchAtLoginAvailable).toBe(true)
+      expect(service.state.settings.launchAtLogin).toBe(false)
+
+      await service.execute({
+        type: 'settings',
+        settings: { ...service.state.settings, launchAtLogin: true },
+      })
+      expect(mocks.loginItem.set).toHaveBeenCalledWith({ openAtLogin: true })
+      expect(service.state.settings.launchAtLogin).toBe(true)
+
+      mocks.rename.mockRejectedValueOnce(Object.assign(Error('write failed'), { code: 'EACCES' }))
+      await expect(
+        service.execute({
+          type: 'settings',
+          settings: { ...service.state.settings, launchAtLogin: false },
+        }),
+      ).rejects.toThrow()
+      expect(mocks.loginItem.set).toHaveBeenLastCalledWith({ openAtLogin: true })
+      expect(service.state.settings.launchAtLogin).toBe(true)
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('启动时读取系统中实际的开机启动状态', async () => {
+    mocks.loginItem.isPackaged = true
+    mocks.loginItem.get.mockReturnValue({
+      openAtLogin: true,
+      executableWillLaunchAtLogin: true,
+    })
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(service.state.settings.launchAtLogin).toBe(true)
+      expect(mocks.loginItem.set).not.toHaveBeenCalled()
+    } finally {
+      await service.dispose()
+    }
   })
 })

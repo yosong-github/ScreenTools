@@ -137,26 +137,21 @@ select:focus-visible {
   display: grid;
   place-items: center;
   flex: none;
-  width: 35px;
-  height: 35px;
+  width: 43px;
+  height: 43px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: transparent;
-  color: #aaa8a5;
-}
-.header-icon:hover {
-  background: #292a2a;
-  color: #fff;
-}
-.header-icon.round {
-  width: 43px;
-  height: 43px;
   background: #262729;
   color: #e4e5e6;
 }
-.header-icon.round:hover {
+.header-icon:hover {
   background: #343536;
+  color: #fff;
+}
+.header-icon.active {
+  background: #3f2a1d;
+  color: #ff7b20;
 }
 .tab-bar {
   display: grid;
@@ -196,6 +191,31 @@ select:focus-visible {
 .tab-bar button span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border: 1px solid #353637;
+  border-radius: 15px;
+  background: #242526;
+  color: #ebe9e7;
+  font-size: 13px;
+}
+.settings-bar button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #303132;
+  color: #e4e5e6;
+}
+.settings-bar button:hover {
+  background: #3b3d3e;
 }
 .page-content {
   display: flex;
@@ -484,6 +504,30 @@ input[type='range']::-webkit-slider-thumb {
 .switch input:checked + span::before {
   transform: translateX(16px);
 }
+.switch:has(input:focus-visible) {
+  outline: 2px solid #ff7a16;
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+.settings-page .settings-description {
+  margin: 0;
+  color: #a3a2a0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.settings-page .toggle-card {
+  min-height: 72px;
+}
+.settings-page .card-title {
+  flex-wrap: wrap;
+}
+.settings-page .card-title strong {
+  flex-basis: calc(100% - 35px);
+}
+.settings-page .card-note {
+  flex-basis: 100%;
+  margin: 2px 0 0 28px;
+}
 
 .refresh-card {
   min-height: 119px;
@@ -738,11 +782,14 @@ input[type='range']::-webkit-slider-thumb {
     height: 21px;
     font-size: 17px;
   }
-  .header-icon.round {
+  .header-icon {
     width: 37px;
     height: 37px;
   }
   .tab-bar {
+    border-radius: 11px;
+  }
+  .settings-bar {
     border-radius: 11px;
   }
   .page-content {

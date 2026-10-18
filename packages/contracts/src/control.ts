@@ -89,6 +89,7 @@ export interface ControlState {
   devices: NativeDisplay[]
   profiles: DisplayProfile[]
   settings: AppSettings
+  launchAtLoginAvailable: boolean
   capabilities: Record<string, HardwareCapabilities>
   pending: PendingChange | null
   error: string | null
