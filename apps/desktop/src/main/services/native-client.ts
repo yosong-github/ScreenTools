@@ -76,7 +76,7 @@ export class NativeClient {
       if (operation === 'apply') this.pendingChange = true
       const timer = setTimeout(() => {
         this.requests.delete(id)
-        reject(new Error('设备响应超时，请重新探测'))
+        reject(new Error('设备响应超时，请稍后重试'))
       }, timeout)
       this.requests.set(id, {
         resolve: (value) => {

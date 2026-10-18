@@ -10,11 +10,29 @@ vi.mock('electron', () => ({
     removeHandler: (channel: string) => handlers.delete(channel),
   },
 }))
-import { registerControlIpc, registerIpcHandlers } from '../src/main/ipc'
+import { registerControlIpc, registerIpcHandlers, registerPanelIpc } from '../src/main/ipc'
 import { defaultSettings } from '@screentools/contracts'
 import type { ControlService } from '../src/main/services/control-service'
 
 describe('IPC 边界', () => {
+  it('只允许面板顶层页面请求隐藏窗口', () => {
+    const frame = {}
+    const webContents = { mainFrame: frame }
+    const window = { isDestroyed: () => false, webContents } as unknown as BrowserWindow
+    const hide = vi.fn()
+    const cleanup = registerPanelIpc(() => window, hide)
+    const handler = handlers.get('panel:hide')!
+    try {
+      expect(() => handler({ sender: {}, senderFrame: frame })).toThrow('不允许的 IPC 来源')
+      expect(() => handler({ sender: webContents, senderFrame: {} })).toThrow('不允许的 IPC 来源')
+      expect(hide).not.toHaveBeenCalled()
+      handler({ sender: webContents, senderFrame: frame })
+      expect(hide).toHaveBeenCalledExactlyOnceWith(window)
+    } finally {
+      cleanup()
+    }
+    expect(handlers.size).toBe(0)
+  })
   it('控制命令限制来源并直接传递，读取缓存不触发递归刷新', async () => {
     const frame = {}
     const webContents = { mainFrame: frame }

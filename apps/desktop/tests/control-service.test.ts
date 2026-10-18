@@ -58,20 +58,23 @@ describe('控制服务', () => {
     mocks.request.mockImplementation(async (operation: string) =>
       operation === 'snapshot'
         ? [device]
-        : operation === 'apply'
-          ? { token: 'test-token', expiresAt: Date.now() + 20000 }
-          : {},
+        : operation === 'probe'
+          ? { brightness: { min: 0, max: 100, current: 20 } }
+          : operation === 'apply'
+            ? { token: 'test-token', expiresAt: Date.now() + 20000 }
+            : {},
     )
   })
   it('连续调亮度复用进程，不重新枚举模式，也不覆盖其他能力', async () => {
     const brightness = { min: 0, max: 100, current: 20 }
     const contrast = { min: 0, max: 100, current: 40 }
-    mocks.request.mockImplementation(async (operation: string, payload?: { value: number }) =>
-      operation === 'snapshot'
-        ? [device]
-        : operation === 'probe'
-          ? { brightness, contrast }
-          : { brightness: { ...brightness, current: payload!.value } },
+    mocks.request.mockImplementation(
+      async (operation: string, payload?: { setting?: { value: number } }) =>
+        operation === 'snapshot'
+          ? [device]
+          : operation === 'probe'
+            ? { brightness, contrast }
+            : { brightness: { ...brightness, current: payload!.setting?.value } },
     )
     const service = createControlService('test-data', vi.fn(), vi.fn())
     try {
@@ -154,7 +157,10 @@ describe('控制服务', () => {
     await service.execute({ type: 'confirm', token: 'test-token' })
     expect(mocks.request).toHaveBeenCalledWith(
       'hardware',
-      { id: 'test', feature: 'brightness', value: 50 },
+      {
+        setting: { id: 'test', feature: 'brightness', value: 50 },
+        capability: { min: 0, max: 100, current: 20 },
+      },
       12000,
     )
     await service.dispose()
@@ -176,6 +182,43 @@ describe('控制服务', () => {
     ).rejects.toThrow('禁止自动')
     expect(mocks.request.mock.calls.some((c) => c[0] === 'apply')).toBe(false)
     await service.dispose()
+  })
+  it('普通操作使用缓存，定时轮询只读取已知硬件参数', async () => {
+    vi.useFakeTimers()
+    const brightness = { min: 0, max: 100, current: 20 }
+    mocks.request.mockImplementation(async (operation: string) =>
+      operation === 'snapshot'
+        ? [device]
+        : operation === 'probe'
+          ? { brightness }
+          : operation === 'poll-hardware'
+            ? { brightness: { ...brightness, current: 35 } }
+            : {},
+    )
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(mocks.request.mock.calls.map((call) => call[0])).toEqual(['snapshot', 'probe'])
+      mocks.request.mockClear()
+      await service.execute({
+        type: 'hardware',
+        setting: { id: 'test', feature: 'brightness', value: 30 },
+      })
+      await service.execute({
+        type: 'save-profile',
+        profile: { id: 'p', name: '办公', plan: { displays: [], hardware: [] } },
+      })
+      expect(mocks.request.mock.calls.map((call) => call[0])).toEqual(['hardware'])
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(mocks.request.mock.calls.map((call) => call[0])).toEqual([
+        'hardware',
+        'snapshot',
+        'poll-hardware',
+      ])
+      expect(service.state.capabilities.test?.brightness?.current).toBe(35)
+    } finally {
+      await service.dispose()
+    }
   })
   it('存储失败不保留虚假成功状态，损坏文件不覆盖', async () => {
     const service = createControlService('test-data', vi.fn(), vi.fn())

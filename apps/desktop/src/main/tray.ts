@@ -38,12 +38,6 @@ export function createTray(service: ControlService, show: () => void, quit: () =
           label: state.settings.aliases[d.id] || d.name,
           enabled: !state.pending,
           submenu: [
-            {
-              label: '探测硬件能力',
-              click: () => {
-                void service.execute({ type: 'probe', id: d.id }).catch(show)
-              },
-            },
             ...[25, 50, 75, 100].map((value) => ({
               label: `亮度 ${value}%`,
               enabled: !!state.capabilities[d.id]?.brightness,

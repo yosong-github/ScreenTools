@@ -4,11 +4,12 @@ import {
   capture,
   enumerate,
   persist,
+  pollHardware,
   probe,
   restore,
   writeHardware,
 } from '@screentools/display-native/windows'
-import type { ChangePlan, HardwareSetting } from '@screentools/contracts'
+import type { ChangePlan, HardwarePollRequest, HardwareWriteRequest } from '@screentools/contracts'
 
 const transaction = createChangeTransaction({
   capture: () => {
@@ -35,7 +36,10 @@ process.on('message', (message: { id: number; operation: string; payload?: unkno
         result = probe(message.payload as string)
         break
       case 'hardware':
-        result = writeHardware(message.payload as HardwareSetting)
+        result = writeHardware(message.payload as HardwareWriteRequest)
+        break
+      case 'poll-hardware':
+        result = pollHardware(message.payload as HardwarePollRequest)
         break
       case 'apply':
         result = transaction.apply(() => apply(message.payload as ChangePlan))

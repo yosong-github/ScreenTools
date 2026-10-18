@@ -15,6 +15,8 @@ import type {
 } from '@screentools/contracts'
 import { NativeClient } from './native-client'
 
+const POLL_INTERVAL_MS = 60_000
+
 export function createControlService(dataDir: string, changed: () => void, showWindow: () => void) {
   const state: ControlState = {
     devices: [],
@@ -30,6 +32,9 @@ export function createControlService(dataDir: string, changed: () => void, showW
   let io: Promise<unknown> = Promise.resolve()
   let validStorage = true
   let stopping = false
+  let queuedCommands = 0
+  let pollTimer: ReturnType<typeof setInterval> | undefined
+  let pollTask: Promise<void> | null = null
   const hardwareQueues = new Map<string, Promise<unknown>>()
   const readWorkers = new Map<NativeClient, string>()
   const hardwareWorkers = new Map<
@@ -44,6 +49,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
     entry.worker.terminateReadWorker()
   }
   const probed = new Set<string>()
+  const probeFailures = new Set<string>()
   const native = new NativeClient((error) => {
     if (!error) {
       state.pending = null
@@ -88,6 +94,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
       state.devices = await native.request<NativeDisplay[]>('snapshot')
       const ids = new Set(state.devices.map((d) => d.id))
       for (const id of probed) if (!ids.has(id)) probed.delete(id)
+      for (const id of probeFailures) if (!ids.has(id)) probeFailures.delete(id)
       for (const id of hardwareWorkers.keys()) if (!ids.has(id)) releaseWorker(id)
       state.capabilities = Object.fromEntries(
         Object.entries(state.capabilities).filter(([id]) => ids.has(id)),
@@ -99,7 +106,11 @@ export function createControlService(dataDir: string, changed: () => void, showW
     changed()
     return structuredClone(state)
   }
-  async function hardware(id: string, setting?: HardwareSetting): Promise<void> {
+  async function hardware(
+    id: string,
+    setting?: HardwareSetting,
+    readMode: 'probe' | 'poll' = 'probe',
+  ): Promise<void> {
     if (state.pending) throw new Error('请先确认显示配置，再操作硬件')
     const work = (hardwareQueues.get(id) ?? Promise.resolve())
       .catch(() => {})
@@ -114,22 +125,33 @@ export function createControlService(dataDir: string, changed: () => void, showW
         const { worker } = entry
         readWorkers.set(worker, id)
         try {
+          const capability = setting ? state.capabilities[id]?.[setting.feature] : undefined
+          if (setting && !capability) throw new Error('显示器未确认支持此功能')
           const result = await worker.request<HardwareCapabilities>(
-            setting ? 'hardware' : 'probe',
-            setting ?? id,
+            setting ? 'hardware' : readMode === 'poll' ? 'poll-hardware' : 'probe',
+            setting
+              ? { setting, capability }
+              : readMode === 'poll'
+                ? { id, capabilities: state.capabilities[id] ?? {} }
+                : id,
             12000,
           )
           if (stopping || hardwareWorkers.get(id) !== entry)
-            throw new Error('设备通信已取消，请重新探测')
+            throw new Error('设备通信已取消，请稍后重试')
           if (state.devices.some((d) => d.id === id)) {
-            // 快速写入仅回传当前参数，保留其他已经探测到的能力。
+            // 写入与轮询只更新已读取的参数，完整能力清单仅首次探测时替换。
+            const previous = state.capabilities[id] ?? {}
             state.capabilities[id] =
-              setting?.feature === 'brightness' || setting?.feature === 'contrast'
-                ? { ...state.capabilities[id], ...result }
-                : result
+              setting || readMode === 'poll' ? { ...previous, ...result } : result
+            if (
+              readMode === 'poll' &&
+              JSON.stringify(previous) !== JSON.stringify(state.capabilities[id])
+            )
+              changed()
           }
           state.error = null
-          record(setting ? '硬件参数已提交；最新能力以重新读取为准' : '硬件能力探测完成')
+          if (setting) record('硬件参数已提交；最新值以定时轮询为准')
+          else if (readMode === 'probe') record('硬件能力探测完成')
         } catch (error) {
           if (hardwareWorkers.get(id) === entry) releaseWorker(id)
           throw error
@@ -153,14 +175,44 @@ export function createControlService(dataDir: string, changed: () => void, showW
       if (hardwareQueues.get(id) === work) hardwareQueues.delete(id)
     }
   }
-  function probeNewDevices(): void {
+  async function probeNewDevices(): Promise<void> {
     if (state.pending || stopping) return
-    for (const d of state.devices) {
-      if (probed.has(d.id)) continue
-      probed.add(d.id)
-      // 每个设备只自动探测一次；失败后由用户重试，避免持续打扰慢速驱动。
-      void hardware(d.id).catch(() => record('自动硬件探测失败，可在设备面板手动重试'))
-    }
+    await Promise.all(
+      state.devices.map(async (d) => {
+        if (probed.has(d.id)) return
+        probed.add(d.id)
+        try {
+          await hardware(d.id)
+          probeFailures.delete(d.id)
+        } catch {
+          probed.delete(d.id)
+          if (!stopping && !probeFailures.has(d.id)) {
+            probeFailures.add(d.id)
+            record('自动硬件探测失败，将在下次轮询时重试')
+          }
+        }
+      }),
+    )
+  }
+  function poll(): Promise<void> {
+    if (stopping || state.pending || queuedCommands || pollTask) return Promise.resolve()
+    const task = (async () => {
+      await refresh()
+      if (state.error || stopping || state.pending) return
+      const previouslyProbed = new Set(probed)
+      await probeNewDevices()
+      await Promise.all(
+        state.devices
+          .filter(
+            (d) => previouslyProbed.has(d.id) && Object.keys(state.capabilities[d.id] ?? {}).length,
+          )
+          .map((d) => hardware(d.id, undefined, 'poll').catch(() => {})),
+      )
+    })()
+    pollTask = task
+    return task.finally(() => {
+      if (pollTask === task) pollTask = null
+    })
   }
   function diagnostics(): string {
     return JSON.stringify(
@@ -186,9 +238,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
       throw new Error('方案禁止自动切换输入源或电源，请通过硬件面板单独确认操作')
     if (state.pending) throw new Error('请先确认或恢复上一次配置')
     if (readWorkers.size) throw new Error('硬件通信中，请稍后重试')
-    const devices = await native.request<NativeDisplay[]>('snapshot')
     for (const setting of [...plan.displays, ...plan.hardware])
-      if (!devices.some((d) => d.id === setting.id)) throw new Error('方案所需设备未全部连接')
+      if (!state.devices.some((d) => d.id === setting.id)) throw new Error('方案所需设备未全部连接')
     if (plan.displays.length || plan.topology) {
       state.pending = await native.request<PendingChange>('apply', plan, 15000)
       pendingHardware = plan.hardware
@@ -206,10 +257,12 @@ export function createControlService(dataDir: string, changed: () => void, showW
     if (old && old !== settings.shortcut) globalShortcut.unregister(old)
   }
   async function execute(command: ControlCommand): Promise<ControlState> {
+    queuedCommands++
     let before = { profiles: state.profiles, settings: state.settings }
     const task = queue
       .catch(() => {})
       .then(async () => {
+        await pollTask?.catch(() => {})
         before = {
           profiles: structuredClone(state.profiles),
           settings: structuredClone(state.settings),
@@ -224,6 +277,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
           throw new Error('本地配置损坏，请先备份并修复 control.json')
         switch (command.type) {
           case 'refresh':
+            await refresh()
+            await probeNewDevices()
             break
           case 'apply':
             await applyPlan(command.plan)
@@ -251,11 +306,11 @@ export function createControlService(dataDir: string, changed: () => void, showW
             break
           case 'probe':
             await hardware(command.id)
+            probed.add(command.id)
+            probeFailures.delete(command.id)
             return structuredClone(state)
           case 'hardware':
             await hardware(command.setting.id, command.setting)
-            if (command.setting.feature !== 'inputSource' && command.setting.feature !== 'power')
-              return structuredClone(state)
             break
           case 'save-profile': {
             if (
@@ -338,7 +393,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
             break
           }
         }
-        return refresh()
+        if (command.type === 'confirm' || command.type === 'revert') await refresh()
+        return structuredClone(state)
       })
     queue = task
     try {
@@ -368,6 +424,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
       state.error = message
       record(message)
       throw error
+    } finally {
+      queuedCommands--
     }
   }
   async function init(): Promise<void> {
@@ -400,12 +458,17 @@ export function createControlService(dataDir: string, changed: () => void, showW
       .map((d) => d.id)
       .sort()
       .join(',')
+    await probeNewDevices()
     if (state.settings.startupProfileId)
       await execute({ type: 'apply-profile', id: state.settings.startupProfileId }).catch(() => {})
-    probeNewDevices()
+    pollTimer = setInterval(() => {
+      void poll().catch(() => {})
+    }, POLL_INTERVAL_MS)
+    pollTimer.unref()
   }
   let connected = ''
   async function onDisplaysChanged(): Promise<void> {
+    await pollTask?.catch(() => {})
     await refresh()
     const signature = state.devices
       .map((d) => d.id)
@@ -413,6 +476,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
       .join(',')
     const wasConnected = connected
     connected = signature
+    await probeNewDevices()
     if (
       wasConnected &&
       signature !== wasConnected &&
@@ -421,7 +485,6 @@ export function createControlService(dataDir: string, changed: () => void, showW
     ) {
       await execute({ type: 'apply-profile', id: state.settings.connectProfileId }).catch(() => {})
     }
-    probeNewDevices()
   }
   return {
     init,
@@ -433,7 +496,9 @@ export function createControlService(dataDir: string, changed: () => void, showW
     },
     async dispose() {
       stopping = true
+      clearInterval(pollTimer)
       for (const id of hardwareWorkers.keys()) releaseWorker(id)
+      await pollTask?.catch(() => {})
       globalShortcut.unregisterAll()
       await native.dispose()
       await io.catch(() => {})

@@ -24,9 +24,14 @@ export const useControlsStore = defineStore('controls', () => {
     if (busy.value) return false
     busy.value = true
     error.value = ''
+    const current = generation
     try {
-      await screenTools.executeControl(command)
-      await read()
+      const result = await screenTools.executeControl(command)
+      if (current === generation) {
+        // 命令返回的就是最新缓存状态，不再为每次操作补一次读取。
+        revision++
+        state.value = result
+      }
       return true
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : String(cause)
@@ -39,7 +44,7 @@ export const useControlsStore = defineStore('controls', () => {
   function start(): void {
     if (unsubscribe) return
     unsubscribe = screenTools.onControlChanged(() => {
-      void read()
+      if (!busy.value) void read()
     })
     void read()
   }

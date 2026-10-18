@@ -5,6 +5,25 @@ import type { ControlCommand } from '@screentools/contracts'
 import type { ScreenToolsCore } from './core/screentools-core'
 import type { ControlService } from './services/control-service'
 
+export function registerPanelIpc(
+  getWindow: () => BrowserWindow | null,
+  hideWindow: (window: BrowserWindow) => void,
+): () => void {
+  ipcMain.handle('panel:hide', (event) => {
+    const window = getWindow()
+    if (
+      !window ||
+      window.isDestroyed() ||
+      event.sender !== window.webContents ||
+      event.senderFrame !== window.webContents.mainFrame
+    ) {
+      throw new Error('不允许的 IPC 来源')
+    }
+    hideWindow(window)
+  })
+  return () => ipcMain.removeHandler('panel:hide')
+}
+
 export function registerIpcHandlers(
   core: ScreenToolsCore,
   getWindow: () => BrowserWindow | null,

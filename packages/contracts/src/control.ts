@@ -73,6 +73,14 @@ export interface HardwareValue {
   values?: number[] | undefined
 }
 export type HardwareCapabilities = Partial<Record<HardwareFeature, HardwareValue | undefined>>
+export interface HardwareWriteRequest {
+  setting: HardwareSetting
+  capability: HardwareValue
+}
+export interface HardwarePollRequest {
+  id: string
+  capabilities: HardwareCapabilities
+}
 export interface PendingChange {
   token: string
   expiresAt: number

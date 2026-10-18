@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto'
 import koffi from 'koffi'
-import { writeContinuous } from './continuous-control'
 import { percentageToRaw, validateLayout } from './validation'
 import type {
   ChangePlan,
   NativeDisplay,
   DisplayMode,
   HardwareCapabilities,
-  HardwareSetting,
+  HardwarePollRequest,
+  HardwareWriteRequest,
 } from '@screentools/contracts'
 
 // 所有 Win32 调用只能在独立工作进程执行，主进程不得直接导入此模块。
@@ -387,37 +387,62 @@ function probeHandle(handle: bigint): HardwareCapabilities {
 export function probe(id: string): HardwareCapabilities {
   return withPhysical(id, probeHandle)
 }
-export function writeHardware(setting: HardwareSetting): HardwareCapabilities {
+export function pollHardware(request: HardwarePollRequest): HardwareCapabilities {
+  return withPhysical(request.id, (handle) => {
+    const result: HardwareCapabilities = {}
+    for (const feature of ['brightness', 'contrast'] as const) {
+      const cached = request.capabilities[feature]
+      if (!cached) continue
+      const read = feature === 'brightness' ? brightnessGet : contrastGet
+      const min = Buffer.alloc(4),
+        current = Buffer.alloc(4),
+        max = Buffer.alloc(4)
+      if (read(handle, min, current, max) && max.readUInt32LE() > min.readUInt32LE()) {
+        result[feature] = {
+          ...cached,
+          min: min.readUInt32LE(),
+          max: max.readUInt32LE(),
+          current: current.readUInt32LE(),
+        }
+      }
+    }
+    for (const [feature, code] of [
+      ['volume', 0x62],
+      ['inputSource', 0x60],
+      ['power', 0xd6],
+    ] as const) {
+      const cached = request.capabilities[feature]
+      if (!cached) continue
+      const type = Buffer.alloc(4),
+        current = Buffer.alloc(4),
+        max = Buffer.alloc(4)
+      if (vcpGet(handle, code, type, current, max)) {
+        const reportedMax = max.readUInt32LE()
+        result[feature] = {
+          ...cached,
+          current: current.readUInt32LE(),
+          max: reportedMax > cached.min ? reportedMax : cached.max,
+        }
+      }
+    }
+    return result
+  })
+}
+export function writeHardware(request: HardwareWriteRequest): HardwareCapabilities {
+  const { setting, capability } = request
   return withPhysical(setting.id, (handle) => {
     if (setting.feature === 'brightness' || setting.feature === 'contrast') {
-      const read = setting.feature === 'brightness' ? brightnessGet : contrastGet
       const write = setting.feature === 'brightness' ? brightnessSet : contrastSet
-      const actual = writeContinuous(
-        setting.value,
-        () => {
-          const min = Buffer.alloc(4),
-            current = Buffer.alloc(4),
-            max = Buffer.alloc(4)
-          if (!read(handle, min, current, max))
-            throw new Error(`读取硬件参数失败，Windows 错误码 ${lastError()}`)
-          return {
-            min: min.readUInt32LE(),
-            max: max.readUInt32LE(),
-            current: current.readUInt32LE(),
-          }
-        },
-        (value) => {
-          if (!write(handle, value)) throw new Error(`硬件写入失败，Windows 错误码 ${lastError()}`)
-        },
-      )
-      return { [setting.feature]: actual }
+      const value = percentageToRaw(setting.value, capability.min, capability.max)
+      if (!write(handle, value)) throw new Error(`硬件写入失败，Windows 错误码 ${lastError()}`)
+      // 立即展示已提交值；设备实际值由定时轮询校准，不在每次操作后回读。
+      return { [setting.feature]: { ...capability, current: value } }
     }
-    const capability = probeHandle(handle)[setting.feature]
-    if (!capability) throw new Error('显示器未确认支持此功能')
     const value =
       setting.feature === 'volume'
         ? percentageToRaw(setting.value, capability.min, capability.max)
         : setting.value
+    if (!Number.isInteger(value)) throw new Error('参数超出显示器能力范围')
     if (
       capability.values
         ? !capability.values.includes(value)
@@ -431,8 +456,7 @@ export function writeHardware(setting: HardwareSetting): HardwareCapabilities {
     )
     if (!ok) throw new Error(`硬件写入失败，Windows 错误码 ${lastError()}`)
     // 电源或输入切换后设备可能立即不可达，不伪造读取确认。
-    return setting.feature === 'power' || setting.feature === 'inputSource'
-      ? {}
-      : probeHandle(handle)
+    if (setting.feature === 'power' || setting.feature === 'inputSource') return {}
+    return { volume: { ...capability, current: value } }
   })
 }

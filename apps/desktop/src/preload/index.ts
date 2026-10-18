@@ -7,6 +7,9 @@ import { version } from '../../package.json'
 const api: Readonly<ScreenToolsApi> = {
   platform: process.platform,
   version,
+  async hidePanel() {
+    await ipcRenderer.invoke('panel:hide')
+  },
   onControlChanged(listener) {
     const handler = (): void => listener()
     ipcRenderer.on('controls:changed', handler)

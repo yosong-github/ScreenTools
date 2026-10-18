@@ -3,8 +3,8 @@ import { BrowserWindow, screen, shell } from 'electron'
 import type { Rectangle } from 'electron'
 import { is } from '@electron-toolkit/utils'
 
-const PANEL_WIDTH = 420
-const PANEL_HEIGHT = 680
+const PANEL_WIDTH = 460
+const PANEL_HEIGHT = 820
 const PANEL_EDGE_GAP = 12
 const PANEL_MOTION_DISTANCE = 28
 const SHOW_DURATION = 180
@@ -30,9 +30,12 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 像 Windows 快捷设置一样固定在工作区右下角，不依赖托盘图标是否可见。 */
-export function getSystemPanelPosition(workArea: Rectangle): { x: number; y: number } {
-  const maxX = workArea.x + Math.max(0, workArea.width - PANEL_WIDTH)
-  const maxY = workArea.y + Math.max(0, workArea.height - PANEL_HEIGHT)
+export function getSystemPanelPosition(
+  workArea: Rectangle,
+  panelSize: { width: number; height: number } = { width: PANEL_WIDTH, height: PANEL_HEIGHT },
+): { x: number; y: number } {
+  const maxX = workArea.x + Math.max(0, workArea.width - panelSize.width)
+  const maxY = workArea.y + Math.max(0, workArea.height - panelSize.height)
   return {
     x: clamp(maxX - PANEL_EDGE_GAP, workArea.x, maxX),
     y: clamp(maxY - PANEL_EDGE_GAP, workArea.y, maxY),
@@ -64,11 +67,12 @@ function stopPointerGuard(window: BrowserWindow, state: PanelMotionState): void 
 function startPointerGuard(window: BrowserWindow, state: PanelMotionState, target: Point): void {
   const point = state.activationPoint
   if (!point || process.platform !== 'win32') return
+  const bounds = window.getBounds()
   if (
     point.x < target.x ||
-    point.x >= target.x + PANEL_WIDTH ||
+    point.x >= target.x + bounds.width ||
     point.y < target.y ||
-    point.y >= target.y + PANEL_HEIGHT
+    point.y >= target.y + bounds.height
   ) {
     delete state.activationPoint
     return
@@ -136,7 +140,12 @@ export function showTrayWindow(window: BrowserWindow): void {
   const show = (): void => {
     if (window.isDestroyed()) return
     const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
-    const target = getSystemPanelPosition(display.workArea)
+    const panelSize = {
+      width: Math.min(PANEL_WIDTH, display.workArea.width),
+      height: Math.min(PANEL_HEIGHT, display.workArea.height),
+    }
+    window.setSize(panelSize.width, panelSize.height, false)
+    const target = getSystemPanelPosition(display.workArea, panelSize)
     const wasVisible = window.isVisible()
     const current = window.getBounds()
     const from = {
@@ -236,16 +245,19 @@ export function createTrayWindow(shouldClose: () => boolean = () => false): Brow
     height: PANEL_HEIGHT,
     show: false,
     frame: false,
+    transparent: true,
     resizable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
     skipTaskbar: true,
-    hasShadow: true,
-    roundedCorners: true,
+    // 圆角由页面绘制，避免 Windows 的原生边框/阴影在透明角落留下矩形底色。
+    hasShadow: false,
+    roundedCorners: false,
+    thickFrame: false,
     autoHideMenuBar: true,
     title: 'ScreenTools',
-    backgroundColor: '#101827',
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
