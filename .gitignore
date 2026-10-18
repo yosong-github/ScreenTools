@@ -4,6 +4,7 @@ node_modules/
 dist/
 out/
 coverage/
+**/.vitepress/cache/
 release/
 *.log
 .DS_Store

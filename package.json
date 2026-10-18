@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @screentools/desktop dev",
+    "dev:website": "pnpm --filter @screentools/website dev",
     "build": "pnpm -r --if-present build",
     "build:unpack": "pnpm --filter @screentools/desktop build:unpack",
     "build:win": "pnpm --filter @screentools/desktop build:win",

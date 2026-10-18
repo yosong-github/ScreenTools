@@ -24,6 +24,15 @@ pnpm install
 pnpm dev
 ```
 
+官网位于 `apps/website`，使用 VitePress：
+
+```bash
+pnpm --filter @screentools/website dev
+pnpm --filter @screentools/website build
+```
+
+官网配置为通过 GitHub Pages 发布。首次使用时，在仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。此后将官网或其依赖配置的修改推送到 `main`，`Deploy Website` 工作流会自动构建并部署到 <https://yosong-github.github.io/ScreenTools/>；也可以在 Actions 页面手动运行。本站使用 `/ScreenTools/` 作为路径前缀。
+
 先在显示器 OSD 菜单开启 DDC/CI。设备自动只读探测，失败后可手动重试。复制模式无法唯一匹配物理设备时，先切换扩展模式。输入源与电源控制可能使当前屏幕断开，只在确认可以使用实体按键恢复时操作。
 
 ## 本地打包
