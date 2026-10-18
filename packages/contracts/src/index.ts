@@ -38,7 +38,7 @@ export interface DisplaySnapshot {
 export interface ScreenToolsApi {
   platform: string
   version: string
-  hidePanel(): Promise<void>
+  quitApp(): Promise<void>
   getDisplaySnapshot(): Promise<DisplaySnapshot>
   onDisplaysChanged(listener: () => void): () => void
   getControlState(): Promise<ControlState>

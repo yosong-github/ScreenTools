@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import type {
-  ChangePlan,
-  DisplayProfile,
-  HardwareCapabilities,
-  NativeDisplay,
-} from '@screentools/contracts'
+import type { ChangePlan, HardwareCapabilities, NativeDisplay } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
 import { snapshotSettings } from '@renderer/utils/display-settings'
 import HardwareSlider from '../hardware/HardwareSlider.vue'
 import PanelIcon from '../PanelIcon.vue'
+import ScenePresets from '../scenes/ScenePresets.vue'
 
 defineOptions({ name: 'PictureSettingsPage' })
 
 const props = defineProps<{
   selected: NativeDisplay | undefined
   devices: NativeDisplay[]
-  profiles: DisplayProfile[]
   capabilities: HardwareCapabilities
   locked: boolean
 }>()
@@ -59,21 +54,7 @@ function hdrChange(event: Event): void {
         </button>
       </div>
     </div>
-    <div v-if="profiles.length" class="card compact-card">
-      <div class="card-title">
-        <PanelIcon name="sparkles" /><strong>配置方案</strong><span>{{ profiles.length }} 个</span>
-      </div>
-      <div class="choice-grid profile-grid">
-        <button
-          v-for="profile in profiles.slice(0, 4)"
-          :key="profile.id"
-          :disabled="locked"
-          @click="controls.execute({ type: 'apply-profile', id: profile.id })"
-        >
-          {{ profile.name }}
-        </button>
-      </div>
-    </div>
+    <ScenePresets :device-id="selected?.id" :capabilities="capabilities" :locked="locked" />
     <HardwareSlider
       feature="brightness"
       :device-id="selected?.id"

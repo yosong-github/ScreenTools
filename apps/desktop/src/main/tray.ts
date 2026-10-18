@@ -69,14 +69,6 @@ export function createTray(service: ControlService, show: () => void, quit: () =
           ],
         })),
         { type: 'separator' },
-        ...state.profiles.map((profile) => ({
-          label: profile.name,
-          enabled: !state.pending,
-          click: () => {
-            void service.execute({ type: 'apply-profile', id: profile.id }).catch(show)
-          },
-        })),
-        { type: 'separator' },
         { label: '退出', click: quit },
       ]),
     )

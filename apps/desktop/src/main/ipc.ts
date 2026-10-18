@@ -5,11 +5,11 @@ import type { ControlCommand } from '@screentools/contracts'
 import type { ScreenToolsCore } from './core/screentools-core'
 import type { ControlService } from './services/control-service'
 
-export function registerPanelIpc(
+export function registerAppIpc(
   getWindow: () => BrowserWindow | null,
-  hideWindow: (window: BrowserWindow) => void,
+  quit: () => void,
 ): () => void {
-  ipcMain.handle('panel:hide', (event) => {
+  ipcMain.handle('app:quit', (event) => {
     const window = getWindow()
     if (
       !window ||
@@ -19,9 +19,9 @@ export function registerPanelIpc(
     ) {
       throw new Error('不允许的 IPC 来源')
     }
-    hideWindow(window)
+    quit()
   })
-  return () => ipcMain.removeHandler('panel:hide')
+  return () => ipcMain.removeHandler('app:quit')
 }
 
 export function registerIpcHandlers(

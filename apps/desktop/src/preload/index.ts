@@ -28,8 +28,8 @@ ipcRenderer.on('panel:motion', (_event, phase: 'shown' | 'hiding', waitForPaint:
 const api: Readonly<ScreenToolsApi> = {
   platform: process.platform,
   version,
-  async hidePanel() {
-    await ipcRenderer.invoke('panel:hide')
+  async quitApp() {
+    await ipcRenderer.invoke('app:quit')
   },
   onControlChanged(listener) {
     const handler = (): void => listener()

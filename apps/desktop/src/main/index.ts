@@ -1,10 +1,10 @@
 import { app } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
-import { createTrayWindow, hideTrayWindow, showTrayWindow, toggleTrayWindow } from './window'
+import { createTrayWindow, showTrayWindow, toggleTrayWindow } from './window'
 import { createScreenToolsCore } from './core/screentools-core'
 import type { ScreenToolsCore } from './core/screentools-core'
-import { registerIpcHandlers, registerControlIpc, registerPanelIpc } from './ipc'
+import { registerIpcHandlers, registerControlIpc, registerAppIpc } from './ipc'
 import { createControlService } from './services/control-service'
 import type { ControlService } from './services/control-service'
 import type { Tray } from 'electron'
@@ -16,7 +16,7 @@ let unregisterIpc: (() => void) | undefined
 let control: ControlService | undefined
 let tray: Tray | undefined
 let unregisterControl: (() => void) | undefined
-let unregisterPanel: (() => void) | undefined
+let unregisterApp: (() => void) | undefined
 let stopDisplaySubscription: (() => void) | undefined
 let quitting = false
 let disposed = false
@@ -63,7 +63,10 @@ if (!app.requestSingleInstanceLock()) {
       })
 
       core = createScreenToolsCore()
-      unregisterPanel = registerPanelIpc(() => mainWindow, hideTrayWindow)
+      unregisterApp = registerAppIpc(
+        () => mainWindow,
+        () => app.quit(),
+      )
       unregisterIpc = registerIpcHandlers(core, () => mainWindow)
       control = createControlService(
         app.getPath('userData'),
@@ -97,7 +100,7 @@ if (!app.requestSingleInstanceLock()) {
     disposed = true
     unregisterIpc?.()
     unregisterControl?.()
-    unregisterPanel?.()
+    unregisterApp?.()
     stopDisplaySubscription?.()
     core?.dispose()
     tray?.destroy()

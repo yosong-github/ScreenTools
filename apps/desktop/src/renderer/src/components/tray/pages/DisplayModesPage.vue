@@ -18,7 +18,6 @@ const props = defineProps<{
 }>()
 
 const controls = useControlsStore()
-const resolutionPage = shallowRef(0)
 const refreshPage = shallowRef(0)
 const sizeText = computed(() =>
   props.selected
@@ -38,10 +37,6 @@ const resolutions = computed<Resolution[]>(() => {
     (a, b) => b.width * b.height - a.width * a.height || b.width - a.width,
   )
 })
-const resolutionPages = computed(() => Math.max(1, Math.ceil(resolutions.value.length / 6)))
-const shownResolutions = computed(() =>
-  resolutions.value.slice(resolutionPage.value * 6, resolutionPage.value * 6 + 6),
-)
 const refreshRates = computed(() => {
   const current = props.selected?.mode
   if (!current) return []
@@ -92,13 +87,9 @@ function applyResolution(resolution: Resolution): void {
 watch(
   () => props.selected?.id,
   () => {
-    resolutionPage.value = 0
     refreshPage.value = 0
   },
 )
-watch(resolutionPages, (count) => {
-  resolutionPage.value = Math.min(resolutionPage.value, count - 1)
-})
 watch(refreshPages, (count) => {
   refreshPage.value = Math.min(refreshPage.value, count - 1)
 })
@@ -144,9 +135,16 @@ watch(refreshPages, (count) => {
         <PanelIcon name="resolution" /><strong>分辨率（清晰度）</strong>
         <span>{{ resolutions.length }} 种</span>
       </div>
-      <div v-if="shownResolutions.length" class="resolution-list">
+      <div
+        v-if="resolutions.length"
+        :key="selected?.id"
+        class="resolution-list"
+        role="region"
+        aria-label="可滚动的分辨率列表"
+        tabindex="0"
+      >
         <button
-          v-for="resolution in shownResolutions"
+          v-for="resolution in resolutions"
           :key="`${resolution.width}x${resolution.height}`"
           :class="{
             chosen:
@@ -173,23 +171,6 @@ watch(refreshPages, (count) => {
         </button>
       </div>
       <p v-else class="card-note">暂无可切换的分辨率。</p>
-      <div class="pager">
-        <button
-          :disabled="resolutionPage === 0"
-          aria-label="上一页分辨率"
-          @click="resolutionPage--"
-        >
-          <PanelIcon name="chevron-left" :size="16" />
-        </button>
-        <span>{{ resolutionPage + 1 }} / {{ resolutionPages }}</span>
-        <button
-          :disabled="resolutionPage + 1 >= resolutionPages"
-          aria-label="下一页分辨率"
-          @click="resolutionPage++"
-        >
-          <PanelIcon name="chevron-right" :size="16" />
-        </button>
-      </div>
     </div>
     <div class="scale-note">
       <PanelIcon name="info" :size="16" />系统缩放 {{ scaleText }} · 缩放比例由 Windows 设置管理

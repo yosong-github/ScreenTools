@@ -42,6 +42,19 @@ withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
         d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
       />
     </template>
+    <template v-else-if="name === 'book'">
+      <path
+        d="M12 6c-2-1.5-4.5-2-8-1.5v14c3.5-.5 6 .1 8 1.5 2-1.4 4.5-2 8-1.5v-14c-3.5-.5-6 .1-8 1.5Zm0 0v14"
+      />
+    </template>
+    <template v-else-if="name === 'film'">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M7 3v18m10-18v18M3 8h4m-4 8h4m10-8h4m-4 8h4" />
+    </template>
+    <template v-else-if="name === 'moon'">
+      <path d="M20 15.6A8.6 8.6 0 0 1 8.4 4 8.8 8.8 0 1 0 20 15.6Z" />
+      <path d="M18 3v4m-2-2h4" />
+    </template>
     <template v-else-if="name === 'volume'">
       <path d="M4 9v6h4l5 4V5L8 9H4ZM17 9a4 4 0 0 1 0 6M19.5 6a8 8 0 0 1 0 12" />
     </template>

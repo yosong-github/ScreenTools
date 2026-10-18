@@ -123,9 +123,9 @@ onUnmounted(() => {
       </button>
       <button
         class="header-icon"
-        aria-label="收起面板"
-        title="收起面板"
-        @click="screenTools.hidePanel()"
+        aria-label="退出应用"
+        title="退出应用"
+        @click="screenTools.quitApp()"
       >
         <PanelIcon name="power" :size="21" />
       </button>
@@ -181,7 +181,6 @@ onUnmounted(() => {
           v-else-if="tab === 'picture'"
           :selected="selected"
           :devices="state?.devices ?? []"
-          :profiles="state?.profiles ?? []"
           :capabilities="capabilities"
           :locked="locked"
         />

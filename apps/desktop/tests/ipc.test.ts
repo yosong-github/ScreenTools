@@ -10,24 +10,24 @@ vi.mock('electron', () => ({
     removeHandler: (channel: string) => handlers.delete(channel),
   },
 }))
-import { registerControlIpc, registerIpcHandlers, registerPanelIpc } from '../src/main/ipc'
+import { registerAppIpc, registerControlIpc, registerIpcHandlers } from '../src/main/ipc'
 import { defaultSettings } from '@screentools/contracts'
 import type { ControlService } from '../src/main/services/control-service'
 
 describe('IPC 边界', () => {
-  it('只允许面板顶层页面请求隐藏窗口', () => {
+  it('只允许面板顶层页面请求退出应用', () => {
     const frame = {}
     const webContents = { mainFrame: frame }
     const window = { isDestroyed: () => false, webContents } as unknown as BrowserWindow
-    const hide = vi.fn()
-    const cleanup = registerPanelIpc(() => window, hide)
-    const handler = handlers.get('panel:hide')!
+    const quit = vi.fn()
+    const cleanup = registerAppIpc(() => window, quit)
+    const handler = handlers.get('app:quit')!
     try {
       expect(() => handler({ sender: {}, senderFrame: frame })).toThrow('不允许的 IPC 来源')
       expect(() => handler({ sender: webContents, senderFrame: {} })).toThrow('不允许的 IPC 来源')
-      expect(hide).not.toHaveBeenCalled()
+      expect(quit).not.toHaveBeenCalled()
       handler({ sender: webContents, senderFrame: frame })
-      expect(hide).toHaveBeenCalledExactlyOnceWith(window)
+      expect(quit).toHaveBeenCalledOnce()
     } finally {
       cleanup()
     }
