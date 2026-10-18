@@ -204,6 +204,13 @@ select:focus-visible {
   min-height: 0;
   overflow: hidden;
 }
+.page-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 0;
+}
 
 .monitor-preview {
   display: flex;
@@ -739,6 +746,9 @@ input[type='range']::-webkit-slider-thumb {
     border-radius: 11px;
   }
   .page-content {
+    gap: 7px;
+  }
+  .page-view {
     gap: 7px;
   }
   .monitor-preview {

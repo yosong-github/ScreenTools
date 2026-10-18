@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { useHardwareSliderDraft } from '../src/renderer/src/components/useHardwareSliderDraft'
+import { useHardwareSliderDraft } from '../src/renderer/src/components/tray/hardware/useHardwareSliderDraft'
 
 describe('硬件滑块草稿', () => {
   it('写入期间保持拖动值，不短暂回退到设备旧值', async () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TrayPanel from '@renderer/components/TrayPanel.vue'
+import TrayPanel from '@renderer/components/tray/TrayPanel.vue'
 </script>
 
 <template>

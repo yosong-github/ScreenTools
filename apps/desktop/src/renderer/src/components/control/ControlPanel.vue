@@ -4,12 +4,15 @@ import { storeToRefs } from 'pinia'
 import type {
   AppSettings,
   ChangePlan,
+  DisplayProfile,
   DisplaySetting,
   HardwareFeature,
   HardwareValue,
+  NativeDisplay,
 } from '@screentools/contracts'
 import { defaultSettings } from '@screentools/contracts'
-import { useControlsStore } from '@renderer/stores/controls'
+import { useControlsStore } from '../../stores/controls'
+import { snapshotSettings } from '../../utils/display-settings'
 const store = useControlsStore()
 const { state, busy, error } = storeToRefs(store)
 const selectedId = ref('')
@@ -20,8 +23,12 @@ const profileName = ref('')
 const profileTopology = ref<NonNullable<ChangePlan['topology']> | ''>('')
 const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | undefined
-const selected = computed(() => state.value?.devices.find((d) => d.id === selectedId.value))
-const editing = computed(() => draft.value.find((d) => d.id === selectedId.value))
+const selected = computed(() =>
+  state.value?.devices.find((device: NativeDisplay) => device.id === selectedId.value),
+)
+const editing = computed(() =>
+  draft.value.find((device: DisplaySetting) => device.id === selectedId.value),
+)
 const capabilities = computed(() => state.value?.capabilities[selectedId.value] ?? {})
 const locked = computed(() => busy.value || !!state.value?.pending)
 const countdown = computed(() =>
@@ -41,20 +48,12 @@ const topologyNames = {
   external: '仅外接屏幕',
 } as const
 function resetDraft(): void {
-  draft.value = (state.value?.devices ?? []).map((d) => ({
-    id: d.id,
-    mode: { ...d.mode },
-    x: d.x,
-    y: d.y,
-    rotation: d.rotation,
-    primary: d.primary,
-    ...(d.hdr?.supported ? { hdrEnabled: d.hdr.enabled } : {}),
-  }))
+  draft.value = snapshotSettings(state.value?.devices ?? [])
 }
 watch(
   () => state.value?.devices,
   () => {
-    if (!state.value?.devices.some((d) => d.id === selectedId.value))
+    if (!state.value?.devices.some((device: NativeDisplay) => device.id === selectedId.value))
       selectedId.value = state.value?.devices[0]?.id ?? ''
   },
   { immediate: true },
@@ -69,7 +68,8 @@ watch(
   { immediate: true },
 )
 watch(profileId, (id) => {
-  profileName.value = state.value?.profiles.find((p) => p.id === id)?.name ?? ''
+  profileName.value =
+    state.value?.profiles.find((profile: DisplayProfile) => profile.id === id)?.name ?? ''
 })
 function primary(): void {
   for (const d of draft.value) d.primary = d.id === selectedId.value
