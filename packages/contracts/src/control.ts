@@ -63,6 +63,7 @@ export type ControlCommand =
   | { type: 'copy-diagnostics' }
   | { type: 'import-profiles' }
   | { type: 'export-profiles' }
+  | { type: 'screen-filter'; filter: ScreenFilterId }
 export interface NativeDisplay extends DisplaySetting {
   name: string
   connection: string
@@ -88,6 +89,12 @@ export interface PendingChange {
   token: string
   expiresAt: number
 }
+export type ScreenFilterId = 'off' | 'reading' | 'night' | 'grayscale'
+export interface ScreenFilterState {
+  available: boolean
+  active: ScreenFilterId
+  reason: string | null
+}
 export interface ControlState {
   devices: NativeDisplay[]
   profiles: DisplayProfile[]
@@ -95,6 +102,7 @@ export interface ControlState {
   launchAtLoginAvailable: boolean
   capabilities: Record<string, HardwareCapabilities>
   pending: PendingChange | null
+  screenFilter: ScreenFilterState
   error: string | null
   logs: { time: string; message: string }[]
 }

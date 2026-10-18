@@ -12,10 +12,18 @@ import type {
   HardwareSetting,
   NativeDisplay,
   PendingChange,
+  ScreenFilterId,
+  ScreenFilterState,
 } from '@screentools/contracts'
 import { NativeClient } from './native-client'
 
 const POLL_INTERVAL_MS = 60_000
+const screenFilterLabels: Record<ScreenFilterId, string> = {
+  off: '原色',
+  reading: '阅读',
+  night: '夜间',
+  grayscale: '灰度',
+}
 
 export function createControlService(dataDir: string, changed: () => void, showWindow: () => void) {
   const state: ControlState = {
@@ -25,6 +33,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
     launchAtLoginAvailable: app.isPackaged && process.platform === 'win32',
     capabilities: {},
     pending: null,
+    screenFilter: { available: false, active: 'off', reason: '正在检测屏幕滤镜能力' },
     error: null,
     logs: [],
   }
@@ -58,6 +67,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
       pendingHardware = []
     }
     state.error = error ?? null
+    if (error && !stopping)
+      state.screenFilter = { available: false, active: 'off', reason: '原生工作进程已退出' }
     record(error ?? '显示配置已自动恢复')
     void refresh().catch(() => {})
   })
@@ -107,6 +118,18 @@ export function createControlService(dataDir: string, changed: () => void, showW
     }
     changed()
     return structuredClone(state)
+  }
+  async function refreshScreenFilter(): Promise<void> {
+    try {
+      state.screenFilter = await native.request<ScreenFilterState>('screen-filter-status')
+    } catch {
+      state.screenFilter = {
+        available: false,
+        active: 'off',
+        reason: '当前 Windows 环境无法使用屏幕滤镜',
+      }
+    }
+    changed()
   }
   async function hardware(
     id: string,
@@ -314,6 +337,16 @@ export function createControlService(dataDir: string, changed: () => void, showW
           case 'hardware':
             await hardware(command.setting.id, command.setting)
             break
+          case 'screen-filter': {
+            if (!Object.hasOwn(screenFilterLabels, command.filter))
+              throw new Error('未知的屏幕滤镜')
+            state.screenFilter = await native.request<ScreenFilterState>(
+              'screen-filter-apply',
+              command.filter,
+            )
+            record(`屏幕滤镜已切换为：${screenFilterLabels[command.filter]}`)
+            break
+          }
           case 'save-profile': {
             if (
               state.profiles.length >= 100 &&
@@ -493,6 +526,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
       .sort()
       .join(',')
     await probeNewDevices()
+    await refreshScreenFilter()
     if (state.settings.startupProfileId)
       await execute({ type: 'apply-profile', id: state.settings.startupProfileId }).catch(() => {})
     pollTimer = setInterval(() => {

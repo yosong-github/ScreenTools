@@ -24,6 +24,7 @@ describe('控制状态缓存', () => {
       settings: defaultSettings,
       capabilities: {},
       pending: null,
+      screenFilter: { available: true, active: 'off' as const, reason: null },
       error: null,
       logs: [],
     }
@@ -42,6 +43,7 @@ describe('控制状态缓存', () => {
       settings: defaultSettings,
       capabilities: {},
       pending: null,
+      screenFilter: { available: true, active: 'off' as const, reason: null },
       error: null,
       logs: [],
     }

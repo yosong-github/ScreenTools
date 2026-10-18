@@ -9,15 +9,17 @@ import { useAppearanceTheme } from '@renderer/theme/useAppearanceTheme'
 import { provideHardwareSliderDraft } from './hardware/hardware-slider-context'
 import PanelIcon from './PanelIcon.vue'
 
-type Tab = 'info' | 'picture' | 'modes'
+type Tab = 'info' | 'picture' | 'modes' | 'filters'
 const tabs: { id: Tab; icon: string; label: string }[] = [
   { id: 'info', icon: 'monitor', label: '屏幕信息' },
   { id: 'picture', icon: 'sliders', label: '画面配置' },
   { id: 'modes', icon: 'resolution', label: '刷新率与清晰度' },
+  { id: 'filters', icon: 'contrast', label: '屏幕滤镜' },
 ]
 const ScreenInfoPage = defineAsyncComponent(() => import('./pages/ScreenInfoPage.vue'))
 const PictureSettingsPage = defineAsyncComponent(() => import('./pages/PictureSettingsPage.vue'))
 const DisplayModesPage = defineAsyncComponent(() => import('./pages/DisplayModesPage.vue'))
+const ScreenFiltersPage = defineAsyncComponent(() => import('./pages/ScreenFiltersPage.vue'))
 const AppSettingsPage = defineAsyncComponent(() => import('./pages/AppSettingsPage.vue'))
 
 const controls = useControlsStore()
@@ -152,7 +154,7 @@ onUnmounted(() => {
         :class="{ active: tab === item.id }"
         @click="tab = item.id"
       >
-        <PanelIcon :name="item.icon" :size="21" /><span>{{ item.label }}</span>
+        <PanelIcon :name="item.icon" :size="21" />
       </button>
     </nav>
     <div v-else class="settings-bar">
@@ -181,7 +183,7 @@ onUnmounted(() => {
         </p>
         <button class="primary-action" :disabled="busy" @click="refreshAll">重新检测</button>
       </div>
-      <KeepAlive v-else :max="3">
+      <KeepAlive v-else :max="4">
         <ScreenInfoPage
           v-if="tab === 'info'"
           :selected="selected"
@@ -197,13 +199,14 @@ onUnmounted(() => {
           :locked="locked"
         />
         <DisplayModesPage
-          v-else
+          v-else-if="tab === 'modes'"
           :selected="selected"
           :devices="state?.devices ?? []"
           :display="displays[0]"
           :scale-text="scaleText"
           :locked="locked"
         />
+        <ScreenFiltersPage v-else :state="state?.screenFilter" :locked="locked" />
       </KeepAlive>
     </div>
     <div v-if="statusError" class="status-error" role="alert" :title="statusError">

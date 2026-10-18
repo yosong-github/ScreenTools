@@ -9,7 +9,17 @@ import {
   restore,
   writeHardware,
 } from '@screentools/display-native/windows'
-import type { ChangePlan, HardwarePollRequest, HardwareWriteRequest } from '@screentools/contracts'
+import {
+  applyScreenFilter,
+  disposeScreenFilter,
+  getScreenFilterStatus,
+} from '@screentools/display-native/screen-filter'
+import type {
+  ChangePlan,
+  HardwarePollRequest,
+  HardwareWriteRequest,
+  ScreenFilterId,
+} from '@screentools/contracts'
 
 const transaction = createChangeTransaction({
   capture: () => {
@@ -41,6 +51,12 @@ process.on('message', (message: { id: number; operation: string; payload?: unkno
       case 'poll-hardware':
         result = pollHardware(message.payload as HardwarePollRequest)
         break
+      case 'screen-filter-status':
+        result = getScreenFilterStatus()
+        break
+      case 'screen-filter-apply':
+        result = applyScreenFilter(message.payload as ScreenFilterId)
+        break
       case 'apply':
         result = transaction.apply(() => apply(message.payload as ChangePlan))
         break
@@ -53,6 +69,7 @@ process.on('message', (message: { id: number; operation: string; payload?: unkno
         result = null
         break
       case 'dispose':
+        disposeScreenFilter()
         transaction.revert()
         process.send?.({ id: message.id, result: null }, () => process.exit(0))
         return
@@ -70,6 +87,7 @@ process.on('message', (message: { id: number; operation: string; payload?: unkno
 // 父进程崩溃或主动断开时仍恢复原配置，然后退出工作进程。
 process.on('disconnect', () => {
   try {
+    disposeScreenFilter()
     transaction.revert()
   } finally {
     process.exit(0)

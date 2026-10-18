@@ -38,9 +38,9 @@ export default defineConfig({
     'header-icon':
       'grid place-items-center flex-none w-[43px] h-[43px] p-0 border-0 rounded-full bg-surface text-text hover:bg-hover',
     'tab-bar':
-      'relative grid grid-cols-3 gap-[5px] p-[5px] border border-border rounded-[15px] bg-surface',
+      'relative grid grid-cols-4 gap-[5px] p-[5px] border border-border rounded-[15px] bg-surface',
     'tab-item':
-      'relative flex items-center justify-center gap-2 min-w-0 border-0 rounded-[11px] bg-transparent text-muted text-[11px] font-600 whitespace-nowrap',
+      'relative grid place-items-center min-w-0 border-0 rounded-[11px] bg-transparent text-muted',
     'settings-bar':
       'flex items-center gap-[9px] p-[5px_8px] border border-border rounded-[15px] bg-surface text-strong text-[13px] surface-elevation',
     'settings-back':

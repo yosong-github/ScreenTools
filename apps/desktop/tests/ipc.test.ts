@@ -84,6 +84,7 @@ describe('IPC 边界', () => {
       settings: defaultSettings,
       capabilities: {},
       pending: null,
+      screenFilter: { available: true, active: 'off' as const, reason: null },
       error: null,
       logs: [],
     }

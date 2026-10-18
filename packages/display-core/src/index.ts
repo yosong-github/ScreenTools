@@ -1,5 +1,7 @@
 import type { DisplaySummary } from '@screentools/contracts'
 
+export * from './screen-filters'
+
 export interface DisplayState {
   displays: DisplaySummary[]
   loading: boolean

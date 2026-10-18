@@ -78,9 +78,11 @@ describe('控制服务', () => {
         ? [device]
         : operation === 'probe'
           ? { brightness: { min: 0, max: 100, current: 20 } }
-          : operation === 'apply'
-            ? { token: 'test-token', expiresAt: Date.now() + 20000 }
-            : {},
+          : operation === 'screen-filter-status'
+            ? { available: true, active: 'off', reason: null }
+            : operation === 'apply'
+              ? { token: 'test-token', expiresAt: Date.now() + 20000 }
+              : {},
     )
   })
   it('连续调亮度复用进程，不重新枚举模式，也不覆盖其他能力', async () => {
@@ -216,7 +218,11 @@ describe('控制服务', () => {
     const service = createControlService('test-data', vi.fn(), vi.fn())
     try {
       await service.init()
-      expect(mocks.request.mock.calls.map((call) => call[0])).toEqual(['snapshot', 'probe'])
+      expect(mocks.request.mock.calls.map((call) => call[0])).toEqual([
+        'snapshot',
+        'probe',
+        'screen-filter-status',
+      ])
       mocks.request.mockClear()
       await service.execute({
         type: 'hardware',
@@ -395,6 +401,28 @@ describe('控制服务', () => {
       })
       expect(service.state.settings.theme).toBe('dark')
       expect(mocks.register).not.toHaveBeenCalled()
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('切换全屏滤镜，并在原生失败时保留最后成功状态', async () => {
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      mocks.request.mockClear()
+      mocks.request.mockResolvedValueOnce({ available: true, active: 'reading', reason: null })
+      await service.execute({ type: 'screen-filter', filter: 'reading' })
+      expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply', 'reading')
+      expect(service.state.screenFilter.active).toBe('reading')
+
+      mocks.request.mockRejectedValueOnce(Error('应用屏幕滤镜失败'))
+      await expect(service.execute({ type: 'screen-filter', filter: 'night' })).rejects.toThrow(
+        '应用屏幕滤镜失败',
+      )
+      expect(service.state.screenFilter.active).toBe('reading')
+      await expect(
+        service.execute({ type: 'screen-filter', filter: 'invalid' as never }),
+      ).rejects.toThrow('未知的屏幕滤镜')
     } finally {
       await service.dispose()
     }
