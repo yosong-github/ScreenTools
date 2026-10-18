@@ -39,7 +39,9 @@ jobs:
         run: |
           tag="${{ inputs.tag }}"
           if [ -z "$tag" ]; then
-            tag="$(gh release view --json tagName -q .tagName)"
+            # workflow_dispatch 在 checkout 前运行；显式指定仓库，避免 gh 尝试从
+            # 当前目录读取 .git 并报 "not a git repository"。
+            tag="$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName 2>/dev/null || true)"
           fi
           if [ -z "$tag" ]; then
             echo "::error::未提供发布标签，且仓库中没有可用的 Release"
