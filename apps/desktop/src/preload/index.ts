@@ -3,6 +3,27 @@ import { displayChannels } from '@screentools/contracts'
 import type { ScreenToolsApi, ControlState, DisplaySnapshot } from '@screentools/contracts'
 import { version } from '../../package.json'
 
+// 窗口保持静止，只让页面图层做合成动画，避免逐帧调用原生窗口接口。
+function setPanelMotion(phase: 'hidden' | 'shown' | 'hiding'): void {
+  document.documentElement?.setAttribute('data-panel-motion', phase)
+}
+if (document.documentElement) setPanelMotion('hidden')
+else window.addEventListener('DOMContentLoaded', () => setPanelMotion('hidden'), { once: true })
+let panelMotionRevision = 0
+ipcRenderer.on('panel:motion', (_event, phase: 'shown' | 'hiding', waitForPaint: boolean) => {
+  const revision = ++panelMotionRevision
+  if (phase === 'shown' && waitForPaint) {
+    // 首次显示要先绘制隐藏态，否则过渡会被 Chromium 合并而直接跳到终点。
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (revision === panelMotionRevision) setPanelMotion('shown')
+      }),
+    )
+  } else {
+    setPanelMotion(phase)
+  }
+})
+
 // 只暴露应用定义的接口，渲染进程不直接访问 Node.js 或完整 IPC。
 const api: Readonly<ScreenToolsApi> = {
   platform: process.platform,
