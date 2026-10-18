@@ -37,6 +37,8 @@
 仅在 ScreenTools 运行期间生效
 ```
 
+卡片下方使用一张内置示例图展示左右对比：左侧原色，右侧使用当前预览预设的同一颜色矩阵。鼠标悬停或键盘聚焦预设时先更新预览；点击预设仍立即应用。分界线可拖动，也可用方向键调整。当前滤镜已经作用于全屏时，预览区域同样会受到系统效果影响，需切回“原色”才能准确对比。
+
 交互规则：
 
 1. 点击滤镜后立即应用，不进入 20 秒显示配置确认流程。
@@ -252,6 +254,8 @@ MVP 不把当前滤镜写入 `control.json`。每次启动都是“原色”，�
 | `apps/desktop/src/main/native-worker.ts`                                    | 应用、查询和退出恢复                                   |
 | `apps/desktop/src/main/services/control-service.ts`                         | 命令编排与状态                                         |
 | `apps/desktop/src/renderer/src/components/tray/filters/ScreenFilters.vue`   | 滤镜卡片                                               |
+| `apps/desktop/src/renderer/src/components/tray/filters/FilterPreview.vue`   | 左右对比预览与拖动分界线                               |
+| `apps/desktop/src/renderer/src/assets/filter-preview.png`                   | 本地示例图                                             |
 | `apps/desktop/src/renderer/src/components/tray/pages/ScreenFiltersPage.vue` | 独立滤镜 Tab 页面                                      |
 | `apps/desktop/src/renderer/src/components/tray/TrayPanel.vue`               | 注册第四个 Tab                                         |
 | 对应 `*.test.ts`                                                            | 矩阵、服务、恢复测试及现有 `ControlState` fixture 更新 |

@@ -65,6 +65,9 @@ importers:
       '@screentools/display-control':
         specifier: workspace:*
         version: link:../../packages/display-control
+      '@screentools/display-core':
+        specifier: workspace:*
+        version: link:../../packages/display-core
       '@screentools/display-native':
         specifier: workspace:*
         version: link:../../packages/display-native

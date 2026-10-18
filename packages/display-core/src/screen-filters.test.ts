@@ -5,6 +5,7 @@ import {
   identityColorMatrix,
   screenFilterIds,
   screenFilterPresets,
+  toSvgColorMatrixValues,
 } from './screen-filters'
 
 describe('屏幕滤镜矩阵', () => {
@@ -28,5 +29,14 @@ describe('屏幕滤镜矩阵', () => {
     close[0]! += 0.01
     expect(colorMatricesEqual(identityColorMatrix, close)).toBe(false)
     expect(colorMatricesEqual(identityColorMatrix, identityColorMatrix.slice(1))).toBe(false)
+  })
+
+  it('将 Windows 矩阵转为 SVG 预览矩阵', () => {
+    expect(toSvgColorMatrixValues(identityColorMatrix).split(' ').map(Number)).toEqual([
+      1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0,
+    ])
+    expect(
+      toSvgColorMatrixValues(getScreenFilterMatrix('grayscale')).split(' ').map(Number),
+    ).toEqual([0.3, 0.6, 0.1, 0, 0, 0.3, 0.6, 0.1, 0, 0, 0.3, 0.6, 0.1, 0, 0, 0, 0, 0, 1, 0])
   })
 })

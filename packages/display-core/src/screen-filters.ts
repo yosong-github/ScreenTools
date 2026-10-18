@@ -71,6 +71,15 @@ export function getScreenFilterMatrix(id: ScreenFilterId): ColorMatrix {
   return preset.matrix
 }
 
+// Windows 按行向量乘 5×5 矩阵；SVG feColorMatrix 按列向量使用 4×5 矩阵。
+export function toSvgColorMatrixValues(matrix: ColorMatrix): string {
+  const values: number[] = []
+  for (let output = 0; output < 4; output++) {
+    for (let input = 0; input < 5; input++) values.push(matrix[input * 5 + output]!)
+  }
+  return values.join(' ')
+}
+
 export function colorMatricesEqual(
   left: readonly number[],
   right: readonly number[],

@@ -21,6 +21,7 @@
     "@electron-toolkit/utils": "4.0.0",
     "@screentools/contracts": "workspace:*",
     "@screentools/display-control": "workspace:*",
+    "@screentools/display-core": "workspace:*",
     "@screentools/display-native": "workspace:*",
     "koffi": "3.3.3",
     "pinia": "4.1.0",
