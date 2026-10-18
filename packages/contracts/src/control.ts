@@ -41,7 +41,8 @@ export interface AppSettings {
 export const defaultSettings: AppSettings = {
   aliases: {},
   closeToTray: true,
-  launchAtLogin: false,
+  // 全新安装默认开启开机自启动（仅安装版生效），用户可随时在应用内关闭。
+  launchAtLogin: true,
   theme: 'system',
   shortcut: 'CommandOrControl+Alt+D',
   startupProfileId: null,

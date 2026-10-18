@@ -9,6 +9,8 @@ export default tseslint.config(
     ignores: [
       '**/.cache/**',
       '**/.pnpm-store/**',
+      '**/.vitepress/cache/**',
+      '**/.vitepress/dist/**',
       '**/dist/**',
       '**/out/**',
       '**/release/**',

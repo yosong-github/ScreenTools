@@ -260,45 +260,70 @@ describe('控制服务', () => {
     expect(broken.state.settings).toEqual(defaultSettings)
     await broken.dispose()
   })
-  it('安装版设置开机自启动，并在失败时恢复系统设置', async () => {
+  it('全新安装默认开启开机自启动，并在保存失败时恢复系统设置', async () => {
     mocks.loginItem.isPackaged = true
     const service = createControlService('test-data', vi.fn(), vi.fn())
     try {
       await service.init()
       expect(service.state.launchAtLoginAvailable).toBe(true)
-      expect(service.state.settings.launchAtLogin).toBe(false)
+      // 无配置文件时按默认设置开启，并同步到系统。
+      expect(service.state.settings.launchAtLogin).toBe(true)
+      expect(mocks.loginItem.set).toHaveBeenCalledWith({ openAtLogin: true })
 
       await service.execute({
         type: 'settings',
-        settings: { ...service.state.settings, launchAtLogin: true },
+        settings: { ...service.state.settings, launchAtLogin: false },
       })
-      expect(mocks.loginItem.set).toHaveBeenCalledWith({ openAtLogin: true })
-      expect(service.state.settings.launchAtLogin).toBe(true)
+      expect(mocks.loginItem.set).toHaveBeenLastCalledWith({ openAtLogin: false })
+      expect(service.state.settings.launchAtLogin).toBe(false)
 
       mocks.rename.mockRejectedValueOnce(Object.assign(Error('write failed'), { code: 'EACCES' }))
       await expect(
         service.execute({
           type: 'settings',
-          settings: { ...service.state.settings, launchAtLogin: false },
+          settings: { ...service.state.settings, launchAtLogin: true },
         }),
       ).rejects.toThrow()
-      expect(mocks.loginItem.set).toHaveBeenLastCalledWith({ openAtLogin: true })
-      expect(service.state.settings.launchAtLogin).toBe(true)
+      expect(mocks.loginItem.set).toHaveBeenLastCalledWith({ openAtLogin: false })
+      expect(service.state.settings.launchAtLogin).toBe(false)
     } finally {
       await service.dispose()
     }
   })
-  it('启动时读取系统中实际的开机启动状态', async () => {
+  it('已有配置时以系统中实际的开机启动状态为准', async () => {
     mocks.loginItem.isPackaged = true
     mocks.loginItem.get.mockReturnValue({
       openAtLogin: true,
       executableWillLaunchAtLogin: true,
     })
+    mocks.read.mockResolvedValueOnce(
+      JSON.stringify({
+        version: 1,
+        settings: { ...defaultSettings, launchAtLogin: false },
+        profiles: [],
+      }),
+    )
     const service = createControlService('test-data', vi.fn(), vi.fn())
     try {
       await service.init()
       expect(service.state.settings.launchAtLogin).toBe(true)
       expect(mocks.loginItem.set).not.toHaveBeenCalled()
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('非安装版忽略开机自启动且不调用系统接口', async () => {
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(service.state.launchAtLoginAvailable).toBe(false)
+      await service.execute({
+        type: 'settings',
+        settings: { ...service.state.settings, theme: 'dark' },
+      })
+      expect(mocks.loginItem.set).not.toHaveBeenCalled()
+      expect(service.state.settings.theme).toBe('dark')
+      expect(service.state.settings.launchAtLogin).toBe(false)
     } finally {
       await service.dispose()
     }

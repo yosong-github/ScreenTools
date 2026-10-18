@@ -22,7 +22,8 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  runAfterFinish: false
+  # 安装向导完成页显示「立即启动 ScreenTools」勾选项，默认勾选，用户可自行取消。
+  runAfterFinish: true
 mac:
   category: public.app-category.utilities
   target:

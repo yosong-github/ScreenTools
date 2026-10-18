@@ -32,6 +32,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
   let queue: Promise<unknown> = Promise.resolve()
   let io: Promise<unknown> = Promise.resolve()
   let validStorage = true
+  let loadedSettings = false
   let stopping = false
   let queuedCommands = 0
   let pollTimer: ReturnType<typeof setInterval> | undefined
@@ -342,22 +343,20 @@ export function createControlService(dataDir: string, changed: () => void, showW
             await applyPlan(profile.plan)
             break
           }
-          case 'settings':
+          case 'settings': {
             if (!['system', 'light', 'dark'].includes(command.settings.theme))
               throw new Error('无效的主题设置')
-            if (command.settings.launchAtLogin && !state.launchAtLoginAvailable)
-              throw new Error('开机启动仅适用于已安装版本')
+            // 非安装版不支持开机自启动，统一按关闭保存，避免记录无效状态。
+            const launchAtLogin = state.launchAtLoginAvailable && command.settings.launchAtLogin
             if (command.settings.shortcut !== before.settings.shortcut)
               registerShortcut(command.settings)
-            if (
-              state.launchAtLoginAvailable &&
-              command.settings.launchAtLogin !== before.settings.launchAtLogin
-            )
-              app.setLoginItemSettings({ openAtLogin: command.settings.launchAtLogin })
-            state.settings = command.settings
+            if (state.launchAtLoginAvailable && launchAtLogin !== before.settings.launchAtLogin)
+              app.setLoginItemSettings({ openAtLogin: launchAtLogin })
+            state.settings = { ...command.settings, launchAtLogin }
             await save()
             record('应用设置已保存')
             break
+          }
           case 'export-profiles': {
             const file = await dialog.showSaveDialog({
               defaultPath: 'ScreenTools-profiles.json',
@@ -455,6 +454,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
           : 'system',
       }
       state.profiles = data.profiles
+      // 已存在配置：以用户保存的状态为准，不再套用默认值。
+      loadedSettings = true
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         validStorage = false
@@ -462,14 +463,24 @@ export function createControlService(dataDir: string, changed: () => void, showW
       }
     }
     if (state.launchAtLoginAvailable) {
-      try {
-        // Windows 启动应用可在系统设置中单独关闭，以系统中的实际状态为准。
-        const loginItem = app.getLoginItemSettings()
-        state.settings.launchAtLogin =
-          loginItem.openAtLogin &&
-          (process.platform !== 'win32' || loginItem.executableWillLaunchAtLogin)
-      } catch {
-        record('开机启动状态无法读取')
+      if (loadedSettings) {
+        try {
+          // Windows 启动应用可在系统设置中单独关闭，以系统中的实际状态为准。
+          const loginItem = app.getLoginItemSettings()
+          state.settings.launchAtLogin =
+            loginItem.openAtLogin &&
+            (process.platform !== 'win32' || loginItem.executableWillLaunchAtLogin)
+        } catch {
+          record('开机启动状态无法读取')
+        }
+      } else {
+        // 全新安装：按默认设置开启开机自启动，并写入系统。
+        try {
+          app.setLoginItemSettings({ openAtLogin: state.settings.launchAtLogin })
+          record(state.settings.launchAtLogin ? '已默认开启开机自启动' : '默认未开启开机自启动')
+        } catch {
+          record('开机自启动无法设置')
+        }
       }
     }
     try {
