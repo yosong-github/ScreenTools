@@ -154,15 +154,36 @@ select:focus-visible {
   color: #ff7b20;
 }
 .tab-bar {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
   padding: 5px;
   border: 1px solid #353637;
   border-radius: 15px;
   background: #242526;
 }
+.tab-bar::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 20px) / 3);
+  border-radius: 11px;
+  background: linear-gradient(145deg, #4a2b1b, #3e291e);
+  box-shadow: inset 0 1px 0 #ffb16b12;
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tab-bar[data-active='picture']::before {
+  transform: translateX(calc(100% + 5px));
+}
+.tab-bar[data-active='modes']::before {
+  transform: translateX(calc(200% + 10px));
+}
 .tab-bar button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,14 +197,12 @@ select:focus-visible {
   font-weight: 600;
   white-space: nowrap;
 }
-.tab-bar button:hover {
+.tab-bar button:hover:not(.active) {
   color: #fff;
   background: #303132;
 }
 .tab-bar button.active {
   color: #ff7b20;
-  background: linear-gradient(145deg, #4a2b1b, #3e291e);
-  box-shadow: inset 0 1px 0 #ffb16b12;
 }
 .tab-bar button svg {
   flex: none;
@@ -191,6 +210,11 @@ select:focus-visible {
 .tab-bar button span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-bar::before {
+    transition: none;
+  }
 }
 .settings-bar {
   display: flex;

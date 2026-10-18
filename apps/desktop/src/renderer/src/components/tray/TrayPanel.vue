@@ -130,7 +130,13 @@ onUnmounted(() => {
         <PanelIcon name="power" :size="21" />
       </button>
     </header>
-    <nav v-if="!settingsOpen" class="tab-bar" role="tablist" aria-label="显示器控制页面">
+    <nav
+      v-if="!settingsOpen"
+      class="tab-bar"
+      role="tablist"
+      aria-label="显示器控制页面"
+      :data-active="tab"
+    >
       <button
         v-for="item in tabs"
         :key="item.id"
