@@ -20,6 +20,7 @@ interface PanelMotionState {
   readyHandler: (() => void) | undefined
   pointerGuardTimer: ReturnType<typeof setInterval> | undefined
   blurTimer: ReturnType<typeof setTimeout> | undefined
+  modalOpen: boolean
   activationPoint?: Point
 }
 
@@ -51,6 +52,7 @@ function getMotionState(window: BrowserWindow): PanelMotionState {
       readyHandler: undefined,
       pointerGuardTimer: undefined,
       blurTimer: undefined,
+      modalOpen: false,
     }
     panelMotion.set(window, state)
   }
@@ -186,6 +188,13 @@ export function hideTrayWindow(window: BrowserWindow, source: 'blur' | 'click' =
   }, HIDE_DURATION + 20)
 }
 
+export function setPanelModalOpen(window: BrowserWindow, open: boolean): void {
+  const state = getMotionState(window)
+  state.modalOpen = open
+  if (open && state.blurTimer) clearTimeout(state.blurTimer)
+  if (open) state.blurTimer = undefined
+}
+
 export function toggleTrayWindow(window: BrowserWindow): void {
   const state = getMotionState(window)
   if (state.blurTimer) clearTimeout(state.blurTimer)
@@ -241,6 +250,7 @@ export function createTrayWindow(shouldClose: () => boolean = () => false): Brow
   })
   window.on('blur', () => {
     const state = getMotionState(window)
+    if (state.modalOpen) return
     if (state.blurTimer) clearTimeout(state.blurTimer)
     // 透传时先等托盘 click 完成；若下方没有图标，失焦后仍自动收起。
     state.blurTimer = setTimeout(

@@ -31,6 +31,9 @@ const api: Readonly<ScreenToolsApi> = {
   async quitApp() {
     await ipcRenderer.invoke('app:quit')
   },
+  async confirmInputSourceSwitch() {
+    return ipcRenderer.invoke('app:confirm-input-source') as Promise<boolean>
+  },
   onControlChanged(listener) {
     const handler = (): void => listener()
     ipcRenderer.on('controls:changed', handler)

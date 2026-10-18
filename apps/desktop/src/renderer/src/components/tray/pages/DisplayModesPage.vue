@@ -110,6 +110,7 @@ watch(refreshPages, (count) => {
           :key="rate"
           class="choice-option"
           :class="{ chosen: currentRate !== null && Math.abs(currentRate - rate) < 0.02 }"
+          :aria-pressed="currentRate !== null && Math.abs(currentRate - rate) < 0.02"
           :disabled="locked"
           @click="applyRate(rate)"
         >

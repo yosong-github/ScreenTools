@@ -16,11 +16,14 @@
   --accent-text: #ff8129;
   --accent-bg: #4a2b1b;
   --accent-border: #b85813;
+  --selected-bg: #633310;
+  --selected-border: #ff8129;
+  --selected-text: #f3f1ef;
   --track: #4b4d50;
   --panel-bg: linear-gradient(145deg, #151616 0%, #0d0e0e 57%, #090a0a 100%);
   --card-bg: linear-gradient(145deg, #242526, #202122);
-  --tab-indicator-bg: linear-gradient(145deg, #4a2b1b, #3e291e);
-  --resolution-active-bg: linear-gradient(90deg, #4c2e1d, #3a2b23);
+  --tab-indicator-bg: linear-gradient(145deg, #633310, #4a2b1b);
+  --resolution-active-bg: linear-gradient(90deg, #633310, #4a2b1b);
   --screen-bg: radial-gradient(circle at 28% 23%, #64320e 0%, #311909 54%, #100d0b 100%);
   --panel-inset: #ffffff10;
   --panel-shadow: inset 0 1px 0 var(--panel-inset), 0 5px 11px #0006, 0 1px 3px #0005;
@@ -124,6 +127,12 @@ select:focus-visible {
   background: var(--accent-bg);
   color: var(--accent-text);
 }
+:root:not([data-theme='light']) .header-icon.active,
+:root:not([data-theme='light']) .header-icon.active:hover {
+  background: var(--selected-bg);
+  color: var(--selected-text);
+  box-shadow: inset 0 0 0 1px var(--selected-border);
+}
 .tab-bar::before {
   content: '';
   position: absolute;
@@ -137,6 +146,9 @@ select:focus-visible {
   pointer-events: none;
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+:root:not([data-theme='light']) .tab-bar::before {
+  box-shadow: inset 0 0 0 1px var(--selected-border);
+}
 .tab-bar[data-active='picture']::before {
   transform: translateX(calc(100% + 5px));
 }
@@ -149,6 +161,9 @@ select:focus-visible {
 }
 .tab-item.active {
   color: var(--accent-text);
+}
+:root:not([data-theme='light']) .tab-item.active {
+  color: var(--selected-text);
 }
 .tab-item svg {
   flex: none;
@@ -223,6 +238,17 @@ input[type='range']::-webkit-slider-thumb {
   background: var(--accent-bg);
   color: var(--accent-text);
 }
+:root:not([data-theme='light']) .choice-option.chosen,
+:root:not([data-theme='light']) .choice-option.chosen:hover,
+:root:not([data-theme='light']) .scene-option.chosen,
+:root:not([data-theme='light']) .scene-option.chosen:hover,
+:root:not([data-theme='light']) .source-option.chosen,
+:root:not([data-theme='light']) .source-option.chosen:hover {
+  border-color: var(--selected-border);
+  background: var(--selected-bg);
+  color: var(--selected-text);
+  box-shadow: inset 0 0 0 1px var(--selected-border);
+}
 .toggle-card .card-title {
   flex: 1;
 }
@@ -286,6 +312,12 @@ input[type='range']::-webkit-slider-thumb {
 .resolution-option.chosen {
   background: var(--resolution-active-bg);
   color: var(--text-strong);
+}
+:root:not([data-theme='light']) .resolution-option.chosen,
+:root:not([data-theme='light']) .resolution-option.chosen:hover {
+  background: var(--resolution-active-bg);
+  color: var(--selected-text);
+  box-shadow: inset 0 0 0 1px var(--selected-border);
 }
 .resolution-option.chosen small,
 .resolution-option.chosen svg {

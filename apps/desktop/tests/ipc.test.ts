@@ -1,15 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
+import { dialog } from 'electron'
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron'
 import type { ScreenToolsCore } from '../src/main/core/screentools-core'
+import { setPanelModalOpen } from '../src/main/window'
 
 const handlers = vi.hoisted(() => new Map<string, (...args: unknown[]) => unknown>())
 vi.mock('electron', () => ({
+  dialog: { showMessageBox: vi.fn() },
   ipcMain: {
     handle: (channel: string, handler: (...args: unknown[]) => unknown) =>
       handlers.set(channel, handler),
     removeHandler: (channel: string) => handlers.delete(channel),
   },
 }))
+vi.mock('../src/main/window', () => ({ setPanelModalOpen: vi.fn() }))
 import { registerAppIpc, registerControlIpc, registerIpcHandlers } from '../src/main/ipc'
 import { defaultSettings } from '@screentools/contracts'
 import type { ControlService } from '../src/main/services/control-service'
@@ -28,6 +32,43 @@ describe('IPC 边界', () => {
       expect(quit).not.toHaveBeenCalled()
       handler({ sender: webContents, senderFrame: frame })
       expect(quit).toHaveBeenCalledOnce()
+    } finally {
+      cleanup()
+    }
+    expect(handlers.size).toBe(0)
+  })
+  it('输入源确认框使用应用标题和警告图标，并以取消为默认操作', async () => {
+    const frame = {}
+    const webContents = { mainFrame: frame }
+    const window = { isDestroyed: () => false, webContents } as unknown as BrowserWindow
+    const cleanup = registerAppIpc(() => window, vi.fn())
+    const handler = handlers.get('app:confirm-input-source')!
+    const event = { sender: webContents, senderFrame: frame }
+    try {
+      await expect(handler({ sender: {}, senderFrame: frame })).rejects.toThrow('不允许的 IPC 来源')
+      expect(dialog.showMessageBox).not.toHaveBeenCalled()
+      vi.mocked(dialog.showMessageBox).mockResolvedValueOnce({
+        response: 0,
+        checkboxChecked: false,
+      })
+      await expect(handler(event)).resolves.toBe(false)
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(
+        window,
+        expect.objectContaining({
+          type: 'warning',
+          title: 'ScreenTools · 切换输入源',
+          buttons: ['取消', '继续切换'],
+          defaultId: 0,
+          cancelId: 0,
+        }),
+      )
+      vi.mocked(dialog.showMessageBox).mockResolvedValueOnce({
+        response: 1,
+        checkboxChecked: false,
+      })
+      await expect(handler(event)).resolves.toBe(true)
+      expect(setPanelModalOpen).toHaveBeenCalledWith(window, true)
+      expect(setPanelModalOpen).toHaveBeenLastCalledWith(window, false)
     } finally {
       cleanup()
     }

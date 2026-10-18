@@ -39,6 +39,7 @@ export interface ScreenToolsApi {
   platform: string
   version: string
   quitApp(): Promise<void>
+  confirmInputSourceSwitch(): Promise<boolean>
   getDisplaySnapshot(): Promise<DisplaySnapshot>
   onDisplaysChanged(listener: () => void): () => void
   getControlState(): Promise<ControlState>

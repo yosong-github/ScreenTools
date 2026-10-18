@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onDeactivated, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import type { HardwareValue } from '@screentools/contracts'
+import { screenTools } from '@renderer/api/screen-tools'
 import { useControlsStore } from '@renderer/stores/controls'
 import PanelIcon from '../PanelIcon.vue'
 
@@ -38,20 +39,16 @@ function sourceName(value: number): string {
   )
 }
 
-function chooseSource(value: number): void {
-  if (
-    !switchingEnabled.value ||
-    !props.deviceId ||
-    props.locked ||
-    value === props.capability?.current
-  )
+async function chooseSource(value: number): Promise<void> {
+  const deviceId = props.deviceId
+  if (!switchingEnabled.value || !deviceId || props.locked || value === props.capability?.current)
     return
-  if (!window.confirm('切换输入源可能使屏幕断开，无法自动恢复。请确认可以用显示器实体按键恢复。'))
-    return
+  if (!(await screenTools.confirmInputSourceSwitch())) return
+  if (props.deviceId !== deviceId || props.locked || value === props.capability?.current) return
   disableSwitching()
   void controls.execute({
     type: 'hardware',
-    setting: { id: props.deviceId, feature: 'inputSource', value },
+    setting: { id: deviceId, feature: 'inputSource', value },
   })
 }
 </script>
