@@ -1,18 +1,34 @@
-import { Menu, Tray, nativeImage } from 'electron'
+import { app, Menu, Tray, nativeImage, nativeTheme } from 'electron'
+import type { NativeImage } from 'electron'
 import type { ControlService } from './services/control-service'
+import { renderMonitorTrayIcon } from './tray-icon'
+
+function monitorTrayImage(): NativeImage {
+  const darkSystem =
+    process.platform === 'win32'
+      ? nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
+      : nativeTheme.shouldUseDarkColors
+  const gray = darkSystem ? 245 : 32
+  const image = nativeImage.createFromBitmap(renderMonitorTrayIcon(16, gray), {
+    width: 16,
+    height: 16,
+  })
+  for (const size of [20, 24, 32]) {
+    image.addRepresentation({
+      scaleFactor: size / 16,
+      width: size,
+      height: size,
+      buffer: renderMonitorTrayIcon(size, gray),
+    })
+  }
+  return image
+}
 
 export function createTray(service: ControlService, show: () => void, quit: () => void): Tray {
-  // 使用应用内生成的像素图标，无需依赖外部图标文件。
-  const pixels = Buffer.alloc(24 * 24 * 4)
-  for (let y = 4; y < 19; y++)
-    for (let x = 2; x < 22; x++) {
-      const offset = (y * 24 + x) * 4
-      pixels[offset] = 240
-      pixels[offset + 1] = 180
-      pixels[offset + 2] = 90
-      pixels[offset + 3] = 255
-    }
-  const tray = new Tray(nativeImage.createFromBitmap(pixels, { width: 24, height: 24 }))
+  const tray = new Tray(monitorTrayImage())
+  const updateIcon = (): void => tray.setImage(monitorTrayImage())
+  nativeTheme.on('updated', updateIcon)
+  app.once('before-quit', () => nativeTheme.removeListener('updated', updateIcon))
   tray.setToolTip('ScreenTools 显示器控制')
   tray.on('click', show)
   tray.on('right-click', () => {
