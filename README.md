@@ -21,6 +21,7 @@
   <a href="apps/website/features.md">功能预览</a> ·
   <a href="apps/website/guide/getting-started.md">快速开始</a> ·
   <a href="https://yosong-github.github.io/ScreenTools/">在线官网</a> ·
+  <a href="https://github.com/yosong-github/ScreenTools/releases">版本发布</a> ·
   <a href="https://github.com/yosong-github/ScreenTools/issues">问题反馈</a>
 </p>
 
@@ -152,6 +153,20 @@ feat: add display overview shell
 fix: close the window safely
 docs: update architecture notes
 ```
+
+## 版本与发布
+
+版本号与更新日志由 [release-please](https://github.com/googleapis/release-please) 依据 Conventional Commits 自动维护，无需手动改动版本号或编写 changelog。
+
+发布流程：
+
+1. 改动合并到 `main` 后，`Release Please` 工作流会自动创建 / 更新一个 `chore(main): release x.y.z` 的 PR，其中包含版本号提升与 `apps/desktop/CHANGELOG.md` 更新（`feat` 提升次版本，`fix` 提升补丁版本）。
+2. 需要发布时合并该 PR；release-please 会打上 `vX.Y.Z` 标签并创建 GitHub Release。
+3. 同一工作流随后调用 `Release Build`，在 Windows x64、macOS arm64 与 macOS x64 上构建安装包，并上传到对应的 Release 资产。也可以手动运行 `Release Build` 并填入标签来重建某个版本。
+
+版本号以 `apps/desktop/package.json` 为准（electron-builder 读取该值）。发布页见 <https://github.com/yosong-github/ScreenTools/releases>。
+
+> 首次使用前，请在仓库 **Settings → Actions → General → Workflow permissions** 选择 **Read and write permissions**，并勾选 **Allow GitHub Actions to create and approve pull requests**，release-please 才能创建 release PR 与 Release。
 
 ## 安全提醒
 
