@@ -17,9 +17,12 @@ jobs:
   release-please:
     name: 维护 release PR
     runs-on: ubuntu-latest
+    # manifest（monorepo）模式下，action 按「包路径」前缀输出，而不是裸的
+    # release_created / tag_name；只有根组件（路径为 .）才有裸名。
+    # 路径含 / 时必须用中括号取值，否则会静默取到空字符串并跳过打包。
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      release_created: ${{ steps.release.outputs['apps/desktop--release_created'] }}
+      tag_name: ${{ steps.release.outputs['apps/desktop--tag_name'] }}
     steps:
       - name: 创建 / 更新 release PR
         id: release

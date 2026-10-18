@@ -30,6 +30,13 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
+      - name: 校验发布标签
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.tag }}" ]; then
+            echo "::error::未提供 Release 标签，无法确定要构建的版本"
+            exit 1
+          fi
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.tag }}
@@ -65,6 +72,13 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
+      - name: 校验发布标签
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.tag }}" ]; then
+            echo "::error::未提供 Release 标签，无法确定要构建的版本"
+            exit 1
+          fi
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.tag }}

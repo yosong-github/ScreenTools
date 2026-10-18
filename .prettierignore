@@ -5,3 +5,5 @@ out
 release
 coverage
 pnpm-lock.yaml
+# release-please 生成的更新日志，格式由工具维护，不参与 Prettier 检查。
+**/CHANGELOG.md

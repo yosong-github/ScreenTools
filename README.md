@@ -21,6 +21,7 @@
   <a href="apps/website/features.md">功能预览</a> ·
   <a href="apps/website/guide/getting-started.md">快速开始</a> ·
   <a href="https://yosong-github.github.io/ScreenTools/">在线官网</a> ·
+  <a href="CHANGELOG.md">更新日志</a> ·
   <a href="https://github.com/yosong-github/ScreenTools/releases">版本发布</a> ·
   <a href="https://github.com/yosong-github/ScreenTools/issues">问题反馈</a>
 </p>
@@ -160,7 +161,7 @@ docs: update architecture notes
 
 发布流程：
 
-1. 改动合并到 `main` 后，`Release Please` 工作流会自动创建 / 更新一个 `chore(main): release x.y.z` 的 PR，其中包含版本号提升与 `apps/desktop/CHANGELOG.md` 更新（`feat` 提升次版本，`fix` 提升补丁版本）。
+1. 改动合并到 `main` 后，`Release Please` 工作流会自动创建 / 更新一个 `chore(main): release x.y.z` 的 PR，其中包含版本号提升与根目录 `CHANGELOG.md` 更新（`feat` 提升次版本，`fix` 提升补丁版本）。
 2. 需要发布时合并该 PR；release-please 会打上 `vX.Y.Z` 标签并创建 GitHub Release。
 3. 同一工作流随后调用 `Release Build`，在 Windows x64、macOS arm64 与 macOS x64 上构建安装包，并上传到对应的 Release 资产。也可以手动运行 `Release Build` 并填入标签来重建某个版本。
 
