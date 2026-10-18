@@ -381,8 +381,7 @@ onUnmounted(() => {
     </fieldset>
     <h2>应用设置</h2>
     <fieldset :disabled="locked">
-      <label><input v-model="settings.closeToTray" type="checkbox" />关闭窗口时隐藏到托盘</label
-      ><label><input v-model="settings.launchAtLogin" type="checkbox" />登录时启动（安装版）</label>
+      <label><input v-model="settings.launchAtLogin" type="checkbox" />登录时启动（安装版）</label>
       <div class="control-fields">
         <label
           >打开面板快捷键<input

@@ -14,7 +14,6 @@ export function createTray(service: ControlService, show: () => void, quit: () =
     }
   const tray = new Tray(nativeImage.createFromBitmap(pixels, { width: 24, height: 24 }))
   tray.setToolTip('ScreenTools 显示器控制')
-  tray.on('double-click', show)
   tray.on('click', show)
   tray.on('right-click', () => {
     const state = service.state

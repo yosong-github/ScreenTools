@@ -11,6 +11,8 @@
 }
 body {
   margin: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 button {
   font: inherit;
@@ -26,9 +28,9 @@ g:focus-visible {
   outline-offset: 4px;
 }
 .app-shell {
-  max-width: 1300px;
-  margin: auto;
-  padding: 36px 40px;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 24px;
 }
 .page-heading,
 .section-heading {
@@ -350,5 +352,18 @@ footer {
   }
   h1 {
     font-size: 25px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+  }
+
+  .page-heading .refresh {
+    padding-inline: 10px;
+  }
+
+  footer {
+    flex-direction: column;
+    gap: 4px;
   }
 }
