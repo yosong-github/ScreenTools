@@ -63,10 +63,10 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
-      - name: 质量检查
-        run: pnpm check
-      - name: 构建 EXE（不自动发布）
-        run: pnpm --filter @screentools/desktop exec electron-builder --win --x64 --publish never
+      # 只构建、不在标签上跑 lint / 测试：标签是不可变的，用今天的检查规则去校验
+      # 历史版本会把旧版本的重建卡死（例如 v0.2.0 的 CHANGELOG 尚未加入 prettier 忽略）。
+      - name: 构建 Windows 安装包
+        run: pnpm --filter @screentools/desktop build:win
       - name: 上传到 Release
         shell: bash
         env:
