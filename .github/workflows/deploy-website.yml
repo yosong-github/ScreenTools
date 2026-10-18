@@ -1,5 +1,4 @@
 name: Deploy Website
-
 on:
   push:
     branches: [main]
@@ -10,19 +9,15 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: github-pages
   cancel-in-progress: false
-
 env:
   HUSKY: '0'
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -45,11 +40,12 @@ jobs:
         run: pnpm --filter @screentools/website build
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: apps/website/.vitepress/dist
-
   deploy:
     needs: build
     runs-on: ubuntu-latest
