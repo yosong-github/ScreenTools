@@ -19,6 +19,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '功能预览', link: '/features' },
       { text: '快速开始', link: '/guide/getting-started' },
+      { text: '下载', link: 'https://github.com/yosong-github/ScreenTools/releases/latest' },
       { text: 'GitHub', link: 'https://github.com/yosong-github/ScreenTools' },
     ],
     sidebar: {

@@ -15,7 +15,6 @@
     "build": "pnpm -r --if-present build",
     "build:unpack": "pnpm --filter @screentools/desktop build:unpack",
     "build:win": "pnpm --filter @screentools/desktop build:win",
-    "build:mac": "pnpm --filter @screentools/desktop build:mac",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

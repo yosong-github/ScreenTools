@@ -1,6 +1,6 @@
 // 由品牌 Logo（apps/website/public/logo.svg）生成应用图标资源。
-// 纯 Node 实现：不依赖 sharp / ImageMagick，可在任意平台重跑。
-// 产物写入 apps/desktop/build：icon.png、icon.ico、icon.icns。
+// 纯 Node 实现：不依赖 sharp / ImageMagick。
+// 产物写入 apps/desktop/build：icon.png、icon.ico。
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -28,19 +28,6 @@ const WHITE = { r: 0xff, g: 0xff, b: 0xff }
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
 // ICO 全部使用未压缩 DIB：PNG 压缩条目虽被 Vista+ 支持，但部分图标解析库无法读取。
 const ICO_DIB_MAX = 256
-const ICNS_ENTRIES = [
-  ['icp4', 16],
-  ['icp5', 32],
-  ['icp6', 64],
-  ['ic07', 128],
-  ['ic08', 256],
-  ['ic09', 512],
-  ['ic10', 1024],
-  ['ic11', 32],
-  ['ic12', 64],
-  ['ic13', 256],
-  ['ic14', 512],
-]
 
 function clamp(value, min, max) {
   return value < min ? min : value > max ? max : value
@@ -198,20 +185,6 @@ function encodeIco(entries) {
   return Buffer.concat([header, directory, ...images])
 }
 
-function encodeIcns(entries) {
-  const chunks = entries.map((entry) => {
-    const head = Buffer.alloc(8)
-    head.write(entry.type, 0, 'ascii')
-    head.writeUInt32BE(entry.data.length + 8, 4)
-    return Buffer.concat([head, entry.data])
-  })
-  const body = Buffer.concat(chunks)
-  const header = Buffer.alloc(8)
-  header.write('icns', 0, 'ascii')
-  header.writeUInt32BE(body.length + 8, 4)
-  return Buffer.concat([header, body])
-}
-
 const rgbaBySize = new Map()
 function rgbaFor(size) {
   if (!rgbaBySize.has(size)) rgbaBySize.set(size, renderIcon(size))
@@ -229,10 +202,7 @@ const icoEntries = ICO_SIZES.map((size) => ({
   data: size <= ICO_DIB_MAX ? encodeIcoDib(size, rgbaFor(size)) : pngFor(size),
 }))
 
-const icnsEntries = ICNS_ENTRIES.map(([type, size]) => ({ type, data: pngFor(size) }))
-
 mkdirSync(outputDir, { recursive: true })
 writeFileSync(resolve(outputDir, 'icon.png'), pngFor(1024))
 writeFileSync(resolve(outputDir, 'icon.ico'), encodeIco(icoEntries))
-writeFileSync(resolve(outputDir, 'icon.icns'), encodeIcns(icnsEntries))
 console.log(`已生成应用图标：${outputDir}`)

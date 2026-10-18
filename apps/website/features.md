@@ -31,4 +31,4 @@ ScreenTools 启动后常驻托盘。点击图标展开面板，在三个页面�
 
 显示配置通过 Windows 本机接口处理，显示器硬件参数通过 DDC/CI 读取与写入，不依赖云服务。不同显示器对亮度、音量、输入源等命令的支持情况可能不同。
 
-[查看快速开始 →](/guide/getting-started)
+[下载 Windows 安装包](https://github.com/yosong-github/ScreenTools/releases/latest) · [查看快速开始 →](/guide/getting-started)

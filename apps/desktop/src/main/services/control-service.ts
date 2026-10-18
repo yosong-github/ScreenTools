@@ -22,7 +22,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
     devices: [],
     profiles: [],
     settings: { ...defaultSettings, aliases: {} },
-    launchAtLoginAvailable: app.isPackaged && ['win32', 'darwin'].includes(process.platform),
+    launchAtLoginAvailable: app.isPackaged && process.platform === 'win32',
     capabilities: {},
     pending: null,
     error: null,
@@ -468,8 +468,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
           // Windows 启动应用可在系统设置中单独关闭，以系统中的实际状态为准。
           const loginItem = app.getLoginItemSettings()
           state.settings.launchAtLogin =
-            loginItem.openAtLogin &&
-            (process.platform !== 'win32' || loginItem.executableWillLaunchAtLogin)
+            loginItem.openAtLogin && loginItem.executableWillLaunchAtLogin
         } catch {
           record('开机启动状态无法读取')
         }

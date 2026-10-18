@@ -18,6 +18,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/yosong-github/ScreenTools/releases/latest">下载 Windows 安装包</a> ·
   <a href="apps/website/features.md">功能预览</a> ·
   <a href="apps/website/guide/getting-started.md">快速开始</a> ·
   <a href="https://yosong-github.github.io/ScreenTools/">在线官网</a> ·
@@ -27,6 +28,12 @@
 </p>
 
 ---
+
+## 下载与安装
+
+前往 [最新版本发布页](https://github.com/yosong-github/ScreenTools/releases/latest)，在 **Assets** 中下载 `ScreenTools-版本号-win-x64.exe` 并运行。需要旧版本时，请查看[全部版本](https://github.com/yosong-github/ScreenTools/releases)。`Source code` 压缩包是源码，不是安装程序。
+
+目前仅提供 **Windows x64** 安装包，未配置发布者签名或应用内自动更新。首次安装可能出现 Windows 安全提示，请核对下载地址是否为本仓库的 GitHub Release。新版本的 Release 页面可能先于 EXE 出现；如果 Assets 中暂时只有源码包，请等待 Windows 构建完成后刷新页面。
 
 ## 简介
 
@@ -65,10 +72,7 @@ ScreenTools 是一个面向 **Windows x64** 的本机显示器管理工具。它
 
 ## 平台支持
 
-| 平台        | 界面 | CCD / DDC/CI 原生控制 | 说明                                                 |
-| ----------- | :--: | :-------------------: | ---------------------------------------------------- |
-| Windows x64 |  ✅  |          ✅           | 主要支持平台                                         |
-| macOS       |  ✅  |      ⚠️ 暂不支持      | 可运行界面与设备概览，原生控制不可用，界面会给出提示 |
+仅支持 **Windows x64**。系统显示配置使用 Win32 CCD，显示器硬件控制使用 DDC/CI；具体能力取决于设备与驱动。
 
 ## 技术栈
 
@@ -119,27 +123,21 @@ pnpm --filter @screentools/website build
 ```bash
 pnpm build:unpack # release/win-unpacked
 pnpm build:win    # Windows x64 NSIS 安装包
-pnpm build:mac    # 在 Mac 上构建当前架构的 DMG 和 ZIP
 ```
 
-安装包未配置发布者签名或在线更新服务，当前为硬件测试版本。开发版与安装版数据隔离，设置和方案写入 Electron `userData` 下的 `control.json`，最近 200 条操作写入 `operations.json`。安装向导完成页可勾选是否立即启动；开机启动仅支持安装版，全新安装默认开启。
+当前仍是硬件测试版本。开发版与安装版数据隔离，设置和方案写入 Electron `userData` 下的 `control.json`，最近 200 条操作写入 `operations.json`。安装向导完成页可勾选是否立即启动；开机启动仅支持安装版，全新安装默认开启。
 
 模式写入、多屏热插拔、扩展坞、HDR 与硬件电源控制仍需按文档进行实机验收。独立进程回滚不等于绝对黑屏保护：驱动挂起、系统崩溃或工作进程被强杀可能阻止恢复；软件会报告未确认状态，必要时请使用 Windows 显示设置恢复。
 
 ## GitHub Actions 手动打包
 
 1. 将工作流推送 / 合并到 GitHub 仓库默认分支。
-2. 打开 **Actions → Package Desktop → Run workflow**，选择分支及要构建的平台。
-3. 默认同时构建 Windows x64、macOS arm64（Apple Silicon）与 macOS x64（Intel）；取消对应勾选可只打包一个平台。
-4. 成功后在该次运行的 **Artifacts** 下载对应平台的 EXE 或 DMG / ZIP，保留 14 天。
+2. 打开 **Actions → Package Desktop → Run workflow**，选择分支并运行 Windows x64 打包。
+3. 成功后在该次运行的 **Artifacts** 下载 EXE，保留 14 天。
 
 手动构建会先执行 lint、格式检查、类型检查、测试和生产构建，再打包；失败不会上传安装包。工作流不创建 GitHub Release、不自动发布、不需要额外的签名 Secrets。
 
-macOS 包使用 ad-hoc 签名，未使用 Apple Developer ID 签名或公证，下载后可能受到 Gatekeeper 限制，不属于正式发行包。正式对外分发需另行配置证书和公证。
-
-**可打包 macOS 不代表已支持 macOS 原生显示器控制**：目前 macOS 可运行界面及 Electron 设备概览，CCD / DDC/CI 控制仍仅支持 Windows x64。
-
-参考：[GitHub 手动运行工作流](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)、[electron-builder macOS 配置](https://www.electron.build/v26/docs/mac/)。
+参考：[GitHub 手动运行工作流](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)。
 
 ## 质量检查
 
@@ -163,9 +161,9 @@ docs: update architecture notes
 
 1. 改动合并到 `main` 后，`Release Please` 工作流会自动创建 / 更新一个 `chore(main): release x.y.z` 的 PR，其中包含版本号提升与根目录 `CHANGELOG.md` 更新（`feat` 提升次版本，`fix` 提升补丁版本）。
 2. 需要发布时合并该 PR；release-please 会打上 `vX.Y.Z` 标签并创建 GitHub Release。
-3. 同一工作流随后调用 `Release Build`，在 Windows x64 上构建 EXE 并上传到对应的 Release 资产。也可以手动运行 `Release Build` 重建某个版本：标签留空表示使用最新 Release，填写时须是形如 `v0.2.0` 的完整标签。
+3. 同一工作流随后调用 `Release Build`，在 Windows x64 上构建 EXE 并上传到对应的 Release 资产。Release 创建和安装包上传并非同时完成，请在构建结束后下载。也可以手动运行 `Release Build` 重建某个版本：标签留空表示使用最新 Release，填写时须是形如 `v0.2.0` 的完整标签。
 
-版本号以 `apps/desktop/package.json` 为准（electron-builder 读取该值）。发布页见 <https://github.com/yosong-github/ScreenTools/releases>。
+版本号以 `apps/desktop/package.json` 为准（electron-builder 读取该值）。下载请使用[最新版本发布页](https://github.com/yosong-github/ScreenTools/releases/latest)。
 
 > 首次使用前，请在仓库 **Settings → Actions → General → Workflow permissions** 选择 **Read and write permissions**，并勾选 **Allow GitHub Actions to create and approve pull requests**，release-please 才能创建 release PR 与 Release。
 

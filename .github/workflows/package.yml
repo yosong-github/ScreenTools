@@ -2,15 +2,6 @@ name: Package Desktop
 
 on:
   workflow_dispatch:
-    inputs:
-      windows:
-        description: 构建 Windows x64 EXE
-        type: boolean
-        default: true
-      macos:
-        description: 构建 macOS Apple Silicon 与 Intel DMG / ZIP
-        type: boolean
-        default: true
 
 permissions:
   contents: read
@@ -27,7 +18,6 @@ env:
 
 jobs:
   windows:
-    if: inputs.windows
     name: Windows x64
     runs-on: windows-latest
     timeout-minutes: 45
@@ -52,47 +42,6 @@ jobs:
         with:
           name: ScreenTools-windows-x64-${{ github.run_number }}
           path: release/*.exe
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
-
-  macos:
-    if: inputs.macos
-    name: macOS ${{ matrix.arch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: arm64
-          - runner: macos-15-intel
-            arch: x64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v6.1.0
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
-      - name: 质量检查
-        run: pnpm check
-      # 使用同架构 runner 安装 Koffi 二进制，避免跨架构缺失原生依赖。
-      - name: 构建 DMG 和 ZIP（不发布）
-        run: pnpm --filter @screentools/desktop exec electron-builder --mac --${{ matrix.arch }} --publish never
-      - name: 上传 macOS 安装包
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: ScreenTools-macos-${{ matrix.arch }}-${{ github.run_number }}
-          path: |
-            release/*.dmg
-            release/*.zip
           if-no-files-found: error
           retention-days: 14
           compression-level: 0

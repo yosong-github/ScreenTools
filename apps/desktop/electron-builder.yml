@@ -3,7 +3,7 @@ productName: ScreenTools
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: ../../release
-  # 应用图标（build/icon.ico、build/icon.icns、build/icon.png）由
+  # 应用图标（build/icon.ico、build/icon.png）由
   # scripts/generate-icons.mjs 生成，electron-builder 会自动识别。
   buildResources: build
 files:
@@ -24,13 +24,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   # 安装向导完成页显示「立即启动 ScreenTools」勾选项，默认勾选，用户可自行取消。
   runAfterFinish: true
-mac:
-  category: public.app-category.utilities
-  target:
-    - dmg
-    - zip
-  # 无开发者证书的测试包使用 ad-hoc 签名，不进行 Apple 公证。
-  identity: '-'
-  hardenedRuntime: false
-  notarize: false
 publish: null

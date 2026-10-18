@@ -10,11 +10,11 @@ hero:
     alt: ScreenTools 显示器图标
   actions:
     - theme: brand
+      text: 下载 Windows 版
+      link: https://github.com/yosong-github/ScreenTools/releases/latest
+    - theme: alt
       text: 了解功能
       link: /features
-    - theme: alt
-      text: 快速开始
-      link: /guide/getting-started
 
 features:
   - icon: 🖥️
