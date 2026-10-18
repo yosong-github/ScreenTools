@@ -33,6 +33,7 @@ export interface AppSettings {
   aliases: Record<string, string>
   closeToTray: boolean
   launchAtLogin: boolean
+  theme: 'system' | 'light' | 'dark'
   shortcut: string
   startupProfileId: string | null
   connectProfileId: string | null
@@ -41,6 +42,7 @@ export const defaultSettings: AppSettings = {
   aliases: {},
   closeToTray: true,
   launchAtLogin: false,
+  theme: 'system',
   shortcut: 'CommandOrControl+Alt+D',
   startupProfileId: null,
   connectProfileId: null,

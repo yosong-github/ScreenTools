@@ -64,6 +64,7 @@ describe('控制服务', () => {
   afterEach(() => vi.useRealTimers())
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.register.mockReturnValue(true)
     mocks.loginItem.isPackaged = false
     mocks.loginItem.get.mockReturnValue({
       openAtLogin: false,
@@ -298,6 +299,77 @@ describe('控制服务', () => {
       await service.init()
       expect(service.state.settings.launchAtLogin).toBe(true)
       expect(mocks.loginItem.set).not.toHaveBeenCalled()
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('保存主题偏好并兼容旧配置，拒绝无效主题', async () => {
+    mocks.read.mockResolvedValueOnce(
+      JSON.stringify({
+        version: 1,
+        settings: { ...defaultSettings, theme: 'light' },
+        profiles: [],
+      }),
+    )
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(service.state.settings.theme).toBe('light')
+      await service.execute({
+        type: 'settings',
+        settings: { ...service.state.settings, theme: 'dark' },
+      })
+      expect(service.state.settings.theme).toBe('dark')
+      expect(mocks.write).toHaveBeenCalledWith(
+        'test-data\\control.json.tmp',
+        expect.stringContaining('"theme": "dark"'),
+      )
+      await expect(
+        service.execute({
+          type: 'settings',
+          settings: { ...service.state.settings, theme: 'invalid' as never },
+        }),
+      ).rejects.toThrow('无效的主题设置')
+      expect(service.state.settings.theme).toBe('dark')
+    } finally {
+      await service.dispose()
+    }
+
+    mocks.read.mockResolvedValueOnce(
+      JSON.stringify({
+        version: 1,
+        settings: { ...defaultSettings, theme: undefined },
+        profiles: [],
+      }),
+    )
+    const old = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await old.init()
+      expect(old.state.settings.theme).toBe('system')
+    } finally {
+      await old.dispose()
+    }
+  })
+  it('切换应用主题时不重新注册全局快捷键', async () => {
+    mocks.register.mockReturnValue(false)
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      mocks.register.mockClear()
+
+      await service.execute({
+        type: 'settings',
+        settings: { ...service.state.settings, theme: 'light' },
+      })
+      expect(service.state.settings.theme).toBe('light')
+      expect(mocks.register).not.toHaveBeenCalled()
+
+      await service.execute({
+        type: 'settings',
+        settings: { ...service.state.settings, theme: 'dark' },
+      })
+      expect(service.state.settings.theme).toBe('dark')
+      expect(mocks.register).not.toHaveBeenCalled()
     } finally {
       await service.dispose()
     }

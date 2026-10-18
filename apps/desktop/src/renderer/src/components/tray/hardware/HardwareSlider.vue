@@ -60,11 +60,16 @@ function change(event: Event): void {
   <div class="card slider-card">
     <div class="card-title">
       <PanelIcon :name="icon" /><strong>{{ label }}</strong>
-      <span class="value">{{ capability ? value : '—' }}</span>
+      <span class="value card-value">{{ capability ? value : '—' }}</span>
     </div>
     <p class="card-note">{{ note }}</p>
     <div v-if="capability" class="slider-row">
-      <button :aria-label="`降低${inputLabel}`" :disabled="locked" @click="bump(-1)">
+      <button
+        class="slider-step"
+        :aria-label="`降低${inputLabel}`"
+        :disabled="locked"
+        @click="bump(-1)"
+      >
         <PanelIcon name="minus" :size="16" />
       </button>
       <input
@@ -78,7 +83,12 @@ function change(event: Event): void {
         @input="preview"
         @change="change"
       />
-      <button :aria-label="`提高${inputLabel}`" :disabled="locked" @click="bump(1)">
+      <button
+        class="slider-step"
+        :aria-label="`提高${inputLabel}`"
+        :disabled="locked"
+        @click="bump(1)"
+      >
         <PanelIcon name="plus" :size="16" />
       </button>
     </div>

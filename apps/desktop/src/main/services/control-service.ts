@@ -343,9 +343,12 @@ export function createControlService(dataDir: string, changed: () => void, showW
             break
           }
           case 'settings':
+            if (!['system', 'light', 'dark'].includes(command.settings.theme))
+              throw new Error('无效的主题设置')
             if (command.settings.launchAtLogin && !state.launchAtLoginAvailable)
               throw new Error('开机启动仅适用于已安装版本')
-            registerShortcut(command.settings)
+            if (command.settings.shortcut !== before.settings.shortcut)
+              registerShortcut(command.settings)
             if (
               state.launchAtLoginAvailable &&
               command.settings.launchAtLogin !== before.settings.launchAtLogin
@@ -410,7 +413,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
       ) {
         if (command.type === 'settings') {
           try {
-            registerShortcut(before.settings)
+            if (command.settings.shortcut !== before.settings.shortcut)
+              registerShortcut(before.settings)
             if (state.launchAtLoginAvailable)
               app.setLoginItemSettings({ openAtLogin: before.settings.launchAtLogin })
           } catch {
@@ -446,6 +450,9 @@ export function createControlService(dataDir: string, changed: () => void, showW
         ...defaultSettings,
         ...data.settings,
         aliases: data.settings.aliases ?? {},
+        theme: ['system', 'light', 'dark'].includes(data.settings.theme)
+          ? data.settings.theme
+          : 'system',
       }
       state.profiles = data.profiles
     } catch (error) {

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
+import UnoCSS from 'unocss/vite'
 
 export default defineConfig({
   main: {
@@ -33,6 +34,6 @@ export default defineConfig({
         '@renderer': resolve(import.meta.dirname, 'src/renderer/src'),
       },
     },
-    plugins: [vue()],
+    plugins: [UnoCSS(), vue()],
   },
 })

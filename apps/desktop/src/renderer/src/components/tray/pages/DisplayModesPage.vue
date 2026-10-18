@@ -108,6 +108,7 @@ watch(refreshPages, (count) => {
         <button
           v-for="rate in shownRates"
           :key="rate"
+          class="choice-option"
           :class="{ chosen: currentRate !== null && Math.abs(currentRate - rate) < 0.02 }"
           :disabled="locked"
           @click="applyRate(rate)"
@@ -117,11 +118,17 @@ watch(refreshPages, (count) => {
       </div>
       <p v-else class="card-note">暂无可切换的刷新率。</p>
       <div v-if="refreshPages > 1" class="pager">
-        <button :disabled="refreshPage === 0" aria-label="上一组刷新率" @click="refreshPage--">
+        <button
+          class="pager-button"
+          :disabled="refreshPage === 0"
+          aria-label="上一组刷新率"
+          @click="refreshPage--"
+        >
           <PanelIcon name="chevron-left" :size="16" />
         </button>
         <span>{{ refreshPage + 1 }} / {{ refreshPages }}</span>
         <button
+          class="pager-button"
           :disabled="refreshPage + 1 >= refreshPages"
           aria-label="下一组刷新率"
           @click="refreshPage++"
@@ -146,6 +153,7 @@ watch(refreshPages, (count) => {
         <button
           v-for="resolution in resolutions"
           :key="`${resolution.width}x${resolution.height}`"
+          class="resolution-option"
           :class="{
             chosen:
               selected?.mode.width === resolution.width &&
@@ -154,8 +162,8 @@ watch(refreshPages, (count) => {
           :disabled="locked"
           @click="applyResolution(resolution)"
         >
-          <span>{{ resolution.width }} × {{ resolution.height }}</span>
-          <small>{{
+          <span class="flex-1">{{ resolution.width }} × {{ resolution.height }}</span>
+          <small class="text-subtle text-[10px] font-400">{{
             selected?.mode.width === resolution.width && selected?.mode.height === resolution.height
               ? '当前'
               : '切换'

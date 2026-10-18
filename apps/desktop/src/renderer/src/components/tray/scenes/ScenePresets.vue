@@ -57,6 +57,7 @@ function applyScene(scene: ScenePreset): void {
       <button
         v-for="scene in scenePresets"
         :key="scene.id"
+        class="scene-option"
         type="button"
         :disabled="locked || !available"
         :class="{ chosen: sceneMatches(capabilities, scene) }"
@@ -71,45 +72,3 @@ function applyScene(scene: ScenePreset): void {
     </div>
   </div>
 </template>
-
-<style scoped>
-.scene-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 11px;
-}
-.scene-grid button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  height: 69px;
-  padding: 6px 2px;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: #303233;
-  color: #e6e5e3;
-  font-size: 12px;
-  font-weight: 650;
-}
-.scene-grid button:hover:not(:disabled) {
-  background: #3a3c3d;
-}
-.scene-grid button.chosen {
-  border-color: #b85813;
-  background: #4a2b1b;
-  color: #ff8129;
-}
-@media (max-height: 760px) {
-  .scene-grid {
-    margin-top: 7px;
-  }
-  .scene-grid button {
-    gap: 3px;
-    height: 57px;
-  }
-}
-</style>

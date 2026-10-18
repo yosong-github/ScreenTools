@@ -5,6 +5,7 @@ import { screenTools } from '@renderer/api/screen-tools'
 import { useControlsStore } from '@renderer/stores/controls'
 import { useDisplaysStore } from '@renderer/stores/displays'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
+import { useAppearanceTheme } from '@renderer/theme/useAppearanceTheme'
 import { provideHardwareSliderDraft } from './hardware/hardware-slider-context'
 import PanelIcon from './PanelIcon.vue'
 
@@ -64,6 +65,9 @@ const statusError = computed(
 const countdown = computed(() =>
   Math.max(0, Math.ceil(((state.value?.pending?.expiresAt ?? now.value) - now.value) / 1000)),
 )
+const themePreference = computed(() => state.value?.settings.theme ?? 'system')
+
+useAppearanceTheme(themePreference)
 
 function refreshAll(): void {
   void controls.execute({ type: 'refresh' })
@@ -108,8 +112,8 @@ onUnmounted(() => {
             {{ state?.settings.aliases[device.id] || device.name }}
           </option>
         </select>
-        <h1 v-else :title="title">{{ title }}</h1>
-        <p :title="subtitle">{{ subtitle }}</p>
+        <h1 v-else class="device-name" :title="title">{{ title }}</h1>
+        <p class="device-subtitle" :title="subtitle">{{ subtitle }}</p>
       </div>
       <button
         class="header-icon"
@@ -140,6 +144,7 @@ onUnmounted(() => {
       <button
         v-for="item in tabs"
         :key="item.id"
+        class="tab-item"
         role="tab"
         :aria-selected="tab === item.id"
         :aria-label="item.label"
@@ -151,7 +156,12 @@ onUnmounted(() => {
       </button>
     </nav>
     <div v-else class="settings-bar">
-      <button aria-label="返回显示器控制" title="返回显示器控制" @click="settingsOpen = false">
+      <button
+        class="settings-back"
+        aria-label="返回显示器控制"
+        title="返回显示器控制"
+        @click="settingsOpen = false"
+      >
         <PanelIcon name="chevron-left" :size="19" />
       </button>
       <strong>应用设置</strong>
@@ -165,8 +175,10 @@ onUnmounted(() => {
       />
       <div v-else-if="!selected && !displays.length" class="empty-state">
         <PanelIcon name="monitor" :size="42" />
-        <h2>等待显示器信息</h2>
-        <p>{{ loading ? '正在连接显示器服务…' : '连接显示器后刷新设备列表。' }}</p>
+        <h2 class="empty-title">等待显示器信息</h2>
+        <p class="empty-message">
+          {{ loading ? '正在连接显示器服务…' : '连接显示器后刷新设备列表。' }}
+        </p>
         <button class="primary-action" :disabled="busy" @click="refreshAll">重新检测</button>
       </div>
       <KeepAlive v-else :max="3">
@@ -198,11 +210,17 @@ onUnmounted(() => {
       {{ statusError }}
     </div>
     <footer class="status-footer">
-      <i></i>
-      <span>{{
+      <i class="status-indicator"></i>
+      <span class="status-label">{{
         selected ? `${state?.devices.length ?? 0} 台显示器已连接` : '等待显示器连接'
       }}</span>
-      <button :disabled="busy" title="刷新设备" aria-label="刷新设备" @click="refreshAll">
+      <button
+        class="status-refresh"
+        :disabled="busy"
+        title="刷新设备"
+        aria-label="刷新设备"
+        @click="refreshAll"
+      >
         <PanelIcon name="refresh" :size="16" />
       </button>
     </footer>
@@ -215,17 +233,20 @@ onUnmounted(() => {
     >
       <div class="confirm-card">
         <span class="confirm-icon"><PanelIcon name="monitor" :size="26" /></span>
-        <h2 id="confirm-title">保留新的显示配置？</h2>
-        <p>{{ countdown }} 秒后自动恢复。若画面异常，请等待恢复或立即恢复。</p>
+        <h2 id="confirm-title" class="confirm-title">保留新的显示配置？</h2>
+        <p class="confirm-description">
+          {{ countdown }} 秒后自动恢复。若画面异常，请等待恢复或立即恢复。
+        </p>
         <div class="button-row">
           <button
+            class="dialog-button"
             :disabled="busy"
             @click="controls.execute({ type: 'revert', token: state.pending.token })"
           >
             立即恢复
           </button>
           <button
-            class="accent-button"
+            class="dialog-button accent-button"
             :disabled="busy || countdown === 0"
             @click="controls.execute({ type: 'confirm', token: state.pending.token })"
           >

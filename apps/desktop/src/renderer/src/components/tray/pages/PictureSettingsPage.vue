@@ -47,6 +47,7 @@ function hdrChange(event: Event): void {
         <button
           v-for="(name, key) in topologies"
           :key="key"
+          class="choice-option"
           :disabled="locked || !selected"
           @click="applyTopology(key)"
         >

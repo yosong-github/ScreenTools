@@ -77,6 +77,7 @@ function chooseSource(value: number): void {
       <button
         v-for="value in sources"
         :key="value"
+        class="source-option"
         type="button"
         :class="{ chosen: value === capability?.current }"
         :aria-pressed="value === capability?.current"
@@ -84,7 +85,7 @@ function chooseSource(value: number): void {
         :disabled="!switchingEnabled || locked || !deviceId || value === capability?.current"
         @click="chooseSource(value)"
       >
-        <span>{{ sourceName(value) }}</span>
+        <span class="truncate">{{ sourceName(value) }}</span>
         <PanelIcon v-if="value === capability?.current" name="check" :size="13" />
       </button>
     </div>
@@ -94,72 +95,3 @@ function chooseSource(value: number): void {
     </p>
   </div>
 </template>
-
-<style scoped>
-.source-control {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #a3a2a0;
-  font-size: 10px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.source-control .switch {
-  margin-left: 0;
-}
-.source-control:has(input:disabled) {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-.input-source-options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-  gap: 7px;
-  margin-top: 10px;
-}
-.input-source-options button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 0;
-  height: 34px;
-  padding: 0 7px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: #303233;
-  color: #e6e5e3;
-  font-size: 11px;
-  font-weight: 600;
-}
-.input-source-options button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.input-source-options button svg {
-  flex: none;
-}
-.input-source-options button:hover:not(:disabled):not(.chosen) {
-  background: #3a3c3d;
-}
-.input-source-options button.chosen {
-  border-color: #b85813;
-  background: #4a2b1b;
-  color: #ff8129;
-}
-.input-source-options button:disabled {
-  opacity: 1;
-  cursor: default;
-}
-@media (max-height: 760px) {
-  .input-source-options {
-    gap: 6px;
-    margin-top: 7px;
-  }
-  .input-source-options button {
-    height: 31px;
-  }
-}
-</style>

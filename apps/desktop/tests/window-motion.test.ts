@@ -15,7 +15,7 @@ import { hideTrayWindow, showTrayWindow, toggleTrayWindow } from '../src/main/wi
 
 function mockWindow(): BrowserWindow {
   let visible = false
-  let bounds = { x: 0, y: 0, width: 460, height: 820 }
+  let bounds = { x: 0, y: 0, width: 484, height: 844 }
   return {
     isDestroyed: () => false,
     isVisible: () => visible,
@@ -45,7 +45,7 @@ describe('托盘面板动画', () => {
     const window = mockWindow()
     showTrayWindow(window)
     expect(window.setBounds).toHaveBeenCalledExactlyOnceWith(
-      { x: 1448, y: 248, width: 460, height: 820 },
+      { x: 1436, y: 236, width: 484, height: 844 },
       false,
     )
     expect(window.webContents.send).toHaveBeenLastCalledWith('panel:motion', 'shown', true)

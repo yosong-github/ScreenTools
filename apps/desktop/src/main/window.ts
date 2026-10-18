@@ -6,6 +6,8 @@ import { is } from '@electron-toolkit/utils'
 const PANEL_WIDTH = 460
 const PANEL_HEIGHT = 820
 const PANEL_EDGE_GAP = 12
+// 与渲染层 #app 的透明内边距保持一致，为 CSS 阴影预留空间。
+const PANEL_SHADOW_GUTTER = 12
 const SHOW_DURATION = 180
 const HIDE_DURATION = 140
 
@@ -107,21 +109,32 @@ export function showTrayWindow(window: BrowserWindow): void {
     if (window.isDestroyed()) return
     const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
     const panelSize = {
-      width: Math.min(PANEL_WIDTH, display.workArea.width),
-      height: Math.min(PANEL_HEIGHT, display.workArea.height),
+      width: Math.min(PANEL_WIDTH, display.workArea.width - PANEL_SHADOW_GUTTER * 2),
+      height: Math.min(PANEL_HEIGHT, display.workArea.height - PANEL_SHADOW_GUTTER * 2),
     }
     const target = getSystemPanelPosition(display.workArea, panelSize)
     const wasVisible = window.isVisible()
     stopAnimation(state)
     state.phase = 'showing'
     delete state.hideSource
-    window.setBounds({ ...target, ...panelSize }, false)
+    window.setBounds(
+      {
+        x: target.x - PANEL_SHADOW_GUTTER,
+        y: target.y - PANEL_SHADOW_GUTTER,
+        width: panelSize.width + PANEL_SHADOW_GUTTER * 2,
+        height: panelSize.height + PANEL_SHADOW_GUTTER * 2,
+      },
+      false,
+    )
     // Windows 的隐藏图标面板本身是置顶浮层，需要使用弹出菜单级别才能显示在它上方。
     window.setAlwaysOnTop(true, 'pop-up-menu')
     window.show()
     window.moveTop()
     window.focus()
-    startPointerGuard(window, state, target)
+    startPointerGuard(window, state, {
+      x: target.x - PANEL_SHADOW_GUTTER,
+      y: target.y - PANEL_SHADOW_GUTTER,
+    })
     window.webContents.send('panel:motion', 'shown', !wasVisible)
     state.timer = setTimeout(
       () => {
@@ -190,8 +203,8 @@ export function toggleTrayWindow(window: BrowserWindow): void {
 
 export function createTrayWindow(shouldClose: () => boolean = () => false): BrowserWindow {
   const window = new BrowserWindow({
-    width: PANEL_WIDTH,
-    height: PANEL_HEIGHT,
+    width: PANEL_WIDTH + PANEL_SHADOW_GUTTER * 2,
+    height: PANEL_HEIGHT + PANEL_SHADOW_GUTTER * 2,
     show: false,
     frame: false,
     transparent: true,

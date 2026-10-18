@@ -30,8 +30,8 @@ const currentRate = computed(
   <section class="page-view">
     <div class="monitor-preview">
       <div class="monitor-screen">
-        <strong>{{ sizeText }}</strong>
-        <span>
+        <strong class="monitor-size">{{ sizeText }}</strong>
+        <span class="monitor-mode">
           {{ currentRate === null ? '刷新率未知' : `${formatRefreshRate(currentRate)} Hz` }} ·
           {{ selected?.primary ? '主显示器' : '活动显示器' }}
         </span>
@@ -39,7 +39,8 @@ const currentRate = computed(
       <span class="monitor-stem"></span><span class="monitor-foot"></span>
     </div>
     <div class="signal-line">
-      <span><i></i>当前画面</span><strong>{{ selected?.connection ?? '系统显示' }}</strong>
+      <span class="signal-label"><i class="signal-dot"></i>当前画面</span
+      ><strong class="signal-connection">{{ selected?.connection ?? '系统显示' }}</strong>
     </div>
     <InputSourceCard
       :device-id="selected?.id"

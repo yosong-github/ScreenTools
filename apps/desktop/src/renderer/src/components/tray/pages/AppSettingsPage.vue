@@ -12,6 +12,11 @@ const props = defineProps<{
 }>()
 
 const controls = useControlsStore()
+const themeOptions = [
+  { value: 'system', label: '跟随系统', icon: 'monitor' },
+  { value: 'light', label: '白色', icon: 'sun' },
+  { value: 'dark', label: '黑色', icon: 'moon' },
+] as const
 
 function changeLaunchAtLogin(event: Event): void {
   if (!props.settings || !props.available || props.locked) return
@@ -21,10 +26,40 @@ function changeLaunchAtLogin(event: Event): void {
     settings: { ...props.settings, launchAtLogin },
   })
 }
+
+function changeTheme(theme: AppSettings['theme']): void {
+  if (!props.settings || props.locked || props.settings.theme === theme) return
+  void controls.execute({
+    type: 'settings',
+    settings: { ...props.settings, theme },
+  })
+}
 </script>
 
 <template>
   <section class="page-view settings-page">
+    <div class="section-caption"><span>外观</span></div>
+    <div class="card compact-card">
+      <div class="card-title">
+        <PanelIcon name="sun" /><strong>主题</strong><span>面板外观</span>
+      </div>
+      <div class="choice-grid theme-grid" role="group" aria-label="选择主题">
+        <button
+          v-for="option in themeOptions"
+          :key="option.value"
+          class="choice-option inline-flex items-center justify-center gap-[5px]"
+          type="button"
+          :disabled="locked || !settings"
+          :class="{ chosen: (settings?.theme ?? 'system') === option.value }"
+          :aria-pressed="(settings?.theme ?? 'system') === option.value"
+          @click="changeTheme(option.value)"
+        >
+          <PanelIcon :name="option.icon" :size="15" />
+          {{ option.label }}
+        </button>
+      </div>
+      <p class="card-note">仅影响 ScreenTools 外观，不会更改 Windows 主题。</p>
+    </div>
     <div class="section-caption"><span>启动与运行</span></div>
     <div class="card toggle-card">
       <div class="card-title">
