@@ -8,12 +8,12 @@ on:
         description: 要构建并上传的 Release 标签，例如 v0.2.0
         required: true
         type: string
-  # 需要重新构建某个已发布版本时手动运行。
+  # 需要重新构建某个已发布版本时手动运行；标签留空则使用最新 Release。
   workflow_dispatch:
     inputs:
       tag:
-        description: 要构建并上传的 Release 标签，例如 v0.2.0
-        required: true
+        description: Release 标签，例如 v0.2.0；留空表示最新 Release
+        required: false
         type: string
 
 permissions:
@@ -30,16 +30,30 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
-      - name: 校验发布标签
+      # 先确认标签真实存在，避免 checkout 抛出难以定位的 git 错误。
+      - name: 解析并校验发布标签
+        id: release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "${{ inputs.tag }}" ]; then
-            echo "::error::未提供 Release 标签，无法确定要构建的版本"
+          tag="${{ inputs.tag }}"
+          if [ -z "$tag" ]; then
+            tag="$(gh release view --json tagName -q .tagName)"
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::未提供发布标签，且仓库中没有可用的 Release"
             exit 1
           fi
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/$tag" > /dev/null 2>&1; then
+            echo "::error::标签 '$tag' 不存在，请填写完整标签（例如 v0.2.0），注意不要包含全角字符"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "发布标签：\`$tag\`" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ steps.release.outputs.tag }}
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
       - uses: actions/setup-node@v7.1.0
@@ -57,47 +71,4 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.tag }}" release/*.exe --clobber
-
-  macos:
-    name: macOS ${{ matrix.arch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: arm64
-          - runner: macos-15-intel
-            arch: x64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
-    steps:
-      - name: 校验发布标签
-        shell: bash
-        run: |
-          if [ -z "${{ inputs.tag }}" ]; then
-            echo "::error::未提供 Release 标签，无法确定要构建的版本"
-            exit 1
-          fi
-      - uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ inputs.tag }}
-          persist-credentials: false
-      - uses: pnpm/action-setup@v6.1.0
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: 安装依赖
-        run: pnpm install --frozen-lockfile
-      - name: 质量检查
-        run: pnpm check
-      # 使用同架构 runner 安装 Koffi 二进制，避免跨架构缺失原生依赖。
-      - name: 构建 DMG 和 ZIP（不自动发布）
-        run: pnpm --filter @screentools/desktop exec electron-builder --mac --${{ matrix.arch }} --publish never
-      - name: 上传到 Release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.tag }}" release/*.dmg release/*.zip --clobber
+        run: gh release upload "${{ steps.release.outputs.tag }}" release/*.exe --clobber

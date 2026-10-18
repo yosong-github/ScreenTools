@@ -163,7 +163,7 @@ docs: update architecture notes
 
 1. 改动合并到 `main` 后，`Release Please` 工作流会自动创建 / 更新一个 `chore(main): release x.y.z` 的 PR，其中包含版本号提升与根目录 `CHANGELOG.md` 更新（`feat` 提升次版本，`fix` 提升补丁版本）。
 2. 需要发布时合并该 PR；release-please 会打上 `vX.Y.Z` 标签并创建 GitHub Release。
-3. 同一工作流随后调用 `Release Build`，在 Windows x64、macOS arm64 与 macOS x64 上构建安装包，并上传到对应的 Release 资产。也可以手动运行 `Release Build` 并填入标签来重建某个版本。
+3. 同一工作流随后调用 `Release Build`，在 Windows x64 上构建 EXE 并上传到对应的 Release 资产。也可以手动运行 `Release Build` 重建某个版本：标签留空表示使用最新 Release，填写时须是形如 `v0.2.0` 的完整标签。
 
 版本号以 `apps/desktop/package.json` 为准（electron-builder 读取该值）。发布页见 <https://github.com/yosong-github/ScreenTools/releases>。
 
