@@ -11,6 +11,7 @@ import {
 } from '@screentools/display-native/windows'
 import {
   applyScreenFilter,
+  applyCustomScreenFilter,
   disposeScreenFilter,
   getScreenFilterStatus,
 } from '@screentools/display-native/screen-filter'
@@ -20,6 +21,7 @@ import type {
   HardwareWriteRequest,
   ScreenFilterId,
 } from '@screentools/contracts'
+import type { ColorMatrix } from '@screentools/display-core'
 
 const transaction = createChangeTransaction({
   capture: () => {
@@ -57,6 +59,11 @@ process.on('message', (message: { id: number; operation: string; payload?: unkno
       case 'screen-filter-apply':
         result = applyScreenFilter(message.payload as ScreenFilterId)
         break
+      case 'screen-filter-apply-custom': {
+        const { id, matrix } = message.payload as { id: string; matrix: ColorMatrix }
+        result = applyCustomScreenFilter(id, matrix)
+        break
+      }
       case 'apply':
         result = transaction.apply(() => apply(message.payload as ChangePlan))
         break

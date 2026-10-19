@@ -19,6 +19,7 @@ export interface ScreenFilterBindings {
 export interface ScreenFilterController {
   getStatus(): ScreenFilterState
   apply(id: ScreenFilterId): ScreenFilterState
+  applyCustom(id: string, matrix: ColorMatrix): ScreenFilterState
   dispose(): void
 }
 
@@ -31,20 +32,26 @@ export function createScreenFilterController(
 ): ScreenFilterController {
   let initialized = false
   let baseline: ColorMatrix | null = null
-  let active: ScreenFilterId = 'off'
+  let active: ScreenFilterId | 'custom' = 'off'
+  let customId: string | null = null
+  let activeMatrix: ColorMatrix | null = null
   let ownsEffect = false
   let unavailableReason: string | null = null
 
   function unavailable(reason: string): ScreenFilterState {
     unavailableReason = reason
-    return { available: false, active: 'off', reason }
+    return { available: false, active: 'off', customId: null, reason }
+  }
+
+  function status(): ScreenFilterState {
+    return { available: true, active, customId, reason: null }
   }
 
   function initialize(): ScreenFilterState {
     if (initialized) {
       return unavailableReason
-        ? { available: false, active: 'off', reason: unavailableReason }
-        : { available: true, active, reason: null }
+        ? { available: false, active: 'off', customId: null, reason: unavailableReason }
+        : status()
     }
     if (!bindings.initialize()) return unavailable(failureMessage('初始化屏幕滤镜', bindings))
     initialized = true
@@ -53,17 +60,19 @@ export function createScreenFilterController(
     if (!colorMatricesEqual(baseline, identityColorMatrix))
       return unavailable('系统或其他程序正在使用颜色滤镜')
     unavailableReason = null
-    return { available: true, active, reason: null }
+    return status()
   }
 
   function getStatus(): ScreenFilterState {
     const status = initialize()
     if (!status.available || !ownsEffect) return status
-    const expected = active === 'off' ? baseline : getScreenFilterMatrix(active)
+    const expected = activeMatrix
     const current = bindings.getColorEffect()
     if (!current || !expected || !colorMatricesEqual(current, expected)) {
       ownsEffect = false
       active = 'off'
+      customId = null
+      activeMatrix = null
       return unavailable('屏幕滤镜已被系统或其他程序替换')
     }
     return status
@@ -71,9 +80,29 @@ export function createScreenFilterController(
 
   function apply(id: ScreenFilterId): ScreenFilterState {
     if (!screenFilterIds.includes(id)) throw new Error('未知的屏幕滤镜')
-    const status = initialize()
-    if (!status.available || !baseline) throw new Error(status.reason ?? '屏幕滤镜不可用')
-    const target = id === 'off' ? baseline : getScreenFilterMatrix(id)
+    initialize()
+    return applyMatrix(id, null, id === 'off' ? baseline : getScreenFilterMatrix(id))
+  }
+
+  function applyCustom(id: string, matrix: ColorMatrix): ScreenFilterState {
+    if (
+      !id ||
+      !Array.isArray(matrix) ||
+      matrix.length !== 25 ||
+      matrix.some((value) => !Number.isFinite(value) || Math.abs(value) > 4)
+    )
+      throw new Error('无效的自定义滤镜矩阵')
+    return applyMatrix('custom', id, matrix)
+  }
+
+  function applyMatrix(
+    next: ScreenFilterId | 'custom',
+    nextCustomId: string | null,
+    target: ColorMatrix | null,
+  ): ScreenFilterState {
+    const currentStatus = initialize()
+    if (!currentStatus.available || !baseline || !target)
+      throw new Error(currentStatus.reason ?? '屏幕滤镜不可用')
     const previous = bindings.getColorEffect()
     if (!previous) throw new Error(failureMessage('读取当前屏幕颜色', bindings))
     if (!bindings.setColorEffect(target)) throw new Error(failureMessage('应用屏幕滤镜', bindings))
@@ -82,9 +111,11 @@ export function createScreenFilterController(
       bindings.setColorEffect(previous)
       throw new Error('系统未确认屏幕滤镜变更')
     }
-    active = id
-    ownsEffect = id !== 'off'
-    return { available: true, active, reason: null }
+    active = next
+    customId = nextCustomId
+    activeMatrix = target
+    ownsEffect = next !== 'off'
+    return status()
   }
 
   function dispose(): void {
@@ -96,12 +127,14 @@ export function createScreenFilterController(
       initialized = false
       baseline = null
       active = 'off'
+      customId = null
+      activeMatrix = null
       ownsEffect = false
       unavailableReason = null
     }
   }
 
-  return { getStatus, apply, dispose }
+  return { getStatus, apply, applyCustom, dispose }
 }
 
 function matrixBuffer(matrix?: ColorMatrix): Buffer {
@@ -158,6 +191,12 @@ export function applyScreenFilter(id: ScreenFilterId): ScreenFilterState {
   const current = getController()
   if (!current) throw new Error(loadFailure)
   return current.apply(id)
+}
+
+export function applyCustomScreenFilter(id: string, matrix: ColorMatrix): ScreenFilterState {
+  const current = getController()
+  if (!current) throw new Error(loadFailure)
+  return current.applyCustom(id, matrix)
 }
 
 export function disposeScreenFilter(): void {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultSettings } from '@screentools/contracts'
+import { createCustomFilterMatrix, defaultCustomFilterSettings } from '@screentools/display-core'
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   read: vi.fn(),
@@ -415,14 +416,86 @@ describe('控制服务', () => {
       expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply', 'reading')
       expect(service.state.screenFilter.active).toBe('reading')
 
+      mocks.request.mockResolvedValueOnce({ available: true, active: 'fps-dark', reason: null })
+      await service.execute({ type: 'screen-filter', filter: 'fps-dark' })
+      expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply', 'fps-dark')
+      expect(service.state.screenFilter.active).toBe('fps-dark')
+
       mocks.request.mockRejectedValueOnce(Error('应用屏幕滤镜失败'))
       await expect(service.execute({ type: 'screen-filter', filter: 'night' })).rejects.toThrow(
         '应用屏幕滤镜失败',
       )
-      expect(service.state.screenFilter.active).toBe('reading')
+      expect(service.state.screenFilter.active).toBe('fps-dark')
       await expect(
         service.execute({ type: 'screen-filter', filter: 'invalid' as never }),
       ).rejects.toThrow('未知的屏幕滤镜')
+    } finally {
+      await service.dispose()
+    }
+  })
+  it('保存并应用自定义滤镜，保护使用中的方案', async () => {
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    const settings = {
+      ...defaultCustomFilterSettings,
+      red: 120,
+      green: 95,
+      blue: 80,
+      saturation: 85,
+      brightness: 10,
+      temperature: 5700,
+    }
+    try {
+      await service.init()
+      await expect(
+        service.execute({
+          type: 'save-custom-filter',
+          name: '无效',
+          settings: { ...settings, red: 0 },
+        }),
+      ).rejects.toThrow('超出允许范围')
+      expect(service.state.customFilters).toEqual([])
+      await service.execute({ type: 'save-custom-filter', name: '暖色工作', settings })
+      const saved = service.state.customFilters[0]!
+      expect(saved.name).toBe('暖色工作')
+      const write = mocks.write.mock.calls.findLast(([path]) =>
+        String(path).endsWith('control.json.tmp'),
+      )
+      expect(JSON.parse(String(write?.[1])).customFilters).toEqual([saved])
+
+      mocks.request.mockResolvedValueOnce({
+        available: true,
+        active: 'custom',
+        customId: saved.id,
+        reason: null,
+      })
+      await service.execute({ type: 'apply-custom-filter', id: saved.id })
+      expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply-custom', {
+        id: saved.id,
+        matrix: createCustomFilterMatrix(settings),
+      })
+      await expect(service.execute({ type: 'delete-custom-filter', id: saved.id })).rejects.toThrow(
+        '先关闭当前滤镜',
+      )
+      mocks.request.mockResolvedValueOnce({ available: true, active: 'off', reason: null })
+      await service.execute({ type: 'screen-filter', filter: 'off' })
+      await service.execute({ type: 'delete-custom-filter', id: saved.id })
+      expect(service.state.customFilters).toEqual([])
+
+      mocks.read.mockResolvedValueOnce(
+        JSON.stringify({
+          version: 1,
+          settings: defaultSettings,
+          profiles: [],
+          customFilters: [saved],
+        }),
+      )
+      const reloaded = createControlService('test-data', vi.fn(), vi.fn())
+      try {
+        await reloaded.init()
+        expect(reloaded.state.customFilters).toEqual([saved])
+      } finally {
+        await reloaded.dispose()
+      }
     } finally {
       await service.dispose()
     }

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createCustomFilterMatrix,
+  defaultCustomFilterSettings,
   identityColorMatrix,
   screenFilterPresets,
   type ColorMatrix,
@@ -34,7 +36,12 @@ describe('屏幕滤镜原生控制器', () => {
   it('应用预设并在关闭时恢复初始矩阵', () => {
     const { bindings, set, uninitialize } = testBindings()
     const controller = createScreenFilterController(bindings)
-    expect(controller.getStatus()).toEqual({ available: true, active: 'off', reason: null })
+    expect(controller.getStatus()).toEqual({
+      available: true,
+      active: 'off',
+      customId: null,
+      reason: null,
+    })
     expect(controller.apply('reading').active).toBe('reading')
     expect(set).toHaveBeenLastCalledWith(screenFilterPresets[0]!.matrix)
     controller.dispose()
@@ -47,7 +54,12 @@ describe('屏幕滤镜原生控制器', () => {
     const { bindings, set } = testBindings()
     const controller = createScreenFilterController(bindings)
     controller.apply('night')
-    expect(controller.apply('off')).toEqual({ available: true, active: 'off', reason: null })
+    expect(controller.apply('off')).toEqual({
+      available: true,
+      active: 'off',
+      customId: null,
+      reason: null,
+    })
     expect(set).toHaveBeenLastCalledWith(identityColorMatrix)
     const calls = set.mock.calls.length
     controller.dispose()
@@ -61,6 +73,7 @@ describe('屏幕滤镜原生控制器', () => {
     expect(controller.getStatus()).toEqual({
       available: false,
       active: 'off',
+      customId: null,
       reason: '系统或其他程序正在使用颜色滤镜',
     })
     expect(() => controller.apply('reading')).toThrow('正在使用颜色滤镜')
@@ -78,5 +91,27 @@ describe('屏幕滤镜原生控制器', () => {
     const controller = createScreenFilterController(bindings)
     expect(() => controller.apply('night')).toThrow('未确认')
     expect(set).toHaveBeenLastCalledWith(identityColorMatrix)
+  })
+
+  it('应用自定义矩阵，跟踪方案并在退出时恢复原色', () => {
+    const { bindings, set } = testBindings()
+    const controller = createScreenFilterController(bindings)
+    const matrix = createCustomFilterMatrix({
+      ...defaultCustomFilterSettings,
+      red: 120,
+      blue: 80,
+      saturation: 90,
+    })
+    expect(controller.applyCustom('mine', matrix)).toEqual({
+      available: true,
+      active: 'custom',
+      customId: 'mine',
+      reason: null,
+    })
+    expect(controller.getStatus().customId).toBe('mine')
+    expect(set).toHaveBeenLastCalledWith(matrix)
+    controller.dispose()
+    expect(set).toHaveBeenLastCalledWith(identityColorMatrix)
+    expect(() => controller.applyCustom('bad', [1] as never)).toThrow('无效的自定义滤镜矩阵')
   })
 })
