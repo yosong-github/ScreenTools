@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0](https://github.com/yosong-github/ScreenTools/compare/v0.2.1...v0.3.0) (2026-10-19)
+
+
+### Features
+
+* add screen filter presets and icon-only tabs ([343cf17](https://github.com/yosong-github/ScreenTools/commit/343cf1754c1ac5f3281040f3700c312332090be0))
+* **desktop:** add custom and FPS screen filters ([a47ac7e](https://github.com/yosong-github/ScreenTools/commit/a47ac7ef281e8168ac51adfc464a404a71c257af))
+* **desktop:** add GitHub online updates ([fcc7436](https://github.com/yosong-github/ScreenTools/commit/fcc7436798bc632116c2e0230a8f15a9f06b3e72))
+* new real-time preview of filter colors ([e309722](https://github.com/yosong-github/ScreenTools/commit/e3097228a781184c18295c04d47ddd332ba56aa1))
+
+
+### Bug Fixes
+
+* **desktop:** bundle display core in native worker ([7c77dae](https://github.com/yosong-github/ScreenTools/commit/7c77dae9ecbc8dcfadc3612a87df49e7433bac53))
+
+
+### Code Refactoring
+
+* **desktop:** organize tray controls into routed views ([53670a1](https://github.com/yosong-github/ScreenTools/commit/53670a18eb36ed6e215f1c2145d3dae66f6acd73))
+* **desktop:** share control components and preserve filter shadows ([d033b47](https://github.com/yosong-github/ScreenTools/commit/d033b470ea782413df5dc570bd9d2bf52dd5ce84))
+
 ## [0.2.1](https://github.com/yosong-github/ScreenTools/compare/v0.2.0...v0.2.1) (2026-10-18)
 
 
