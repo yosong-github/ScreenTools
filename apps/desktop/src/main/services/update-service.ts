@@ -25,7 +25,7 @@ interface Installer {
   url: string
   name: string
   size: number
-  sha256: string
+  sha256: string | null
 }
 
 export function compareVersions(left: string, right: string): number {
@@ -75,8 +75,13 @@ export function parseRelease(
     asset.size > 0 &&
     asset.size < 500 * 1024 * 1024 &&
     asset.browser_download_url === expectedUrl &&
-    digest
-      ? { url: expectedUrl, name: asset.name, size: asset.size, sha256: digest[1]!.toLowerCase() }
+    (asset.digest == null || digest)
+      ? {
+          url: expectedUrl,
+          name: asset.name,
+          size: asset.size,
+          sha256: digest?.[1]?.toLowerCase() ?? null,
+        }
       : null
   return { version, releaseUrl, installer }
 }
@@ -158,14 +163,15 @@ export class UpdateService {
       }
       if (readyVersion !== release.version) this.downloadedPath = null
       this.installer = release.installer
-      return this.setState({
+      const state = this.setState({
         phase: this.downloadedPath ? 'ready' : 'available',
         latestVersion: release.version,
         releaseUrl: release.releaseUrl,
-        canDownload: !!release.installer && app.isPackaged && process.platform === 'win32',
+        canDownload: !!release.installer && process.platform === 'win32',
         progress: this.downloadedPath ? 100 : null,
         error: null,
       })
+      return state.phase === 'available' && state.canDownload ? this.download() : state
     } catch (error) {
       if (wasReady) return this.state
       return this.setState({
@@ -222,7 +228,7 @@ export class UpdateService {
       } finally {
         await file.close()
       }
-      if (bytes !== installer.size || hash.digest('hex') !== installer.sha256)
+      if (bytes !== installer.size || (installer.sha256 && hash.digest('hex') !== installer.sha256))
         throw new Error('安装包校验失败，请重试')
       this.downloadedPath = filePath
       return this.setState({ phase: 'ready', progress: 100 })

@@ -5,7 +5,7 @@ import { dirname } from 'node:path'
 import { app, net, shell } from 'electron'
 
 vi.mock('electron', () => ({
-  app: { getVersion: () => '0.2.1', isPackaged: true, quit: vi.fn() },
+  app: { getVersion: () => '0.2.1', isPackaged: false, quit: vi.fn() },
   net: { fetch: vi.fn() },
   shell: { openPath: vi.fn(), openExternal: vi.fn() },
 }))
@@ -30,13 +30,16 @@ describe('GitHub 更新版本', () => {
     expect(parseRelease(release, '0.4.0')).toBeNull()
   })
 
-  it('只接受匹配版本、仓库下载地址和 SHA-256 摘要的安装包', () => {
+  it('只接受匹配版本和仓库下载地址的安装包，保留可用的 SHA-256 摘要', () => {
     expect(parseRelease(release, '0.2.1')).toMatchObject({
       version,
       installer: { name, url, size: 123, sha256: 'a'.repeat(64) },
     })
     expect(
       parseRelease({ ...release, assets: [{ ...release.assets[0], digest: null }] }, '0.2.1'),
+    ).toMatchObject({ version, installer: { name, url, sha256: null } })
+    expect(
+      parseRelease({ ...release, assets: [{ ...release.assets[0], digest: 'invalid' }] }, '0.2.1'),
     ).toMatchObject({ version, installer: null })
     expect(
       parseRelease(
@@ -49,7 +52,7 @@ describe('GitHub 更新版本', () => {
     ).toMatchObject({ version, installer: null })
   })
 
-  it('下载并校验安装包后才允许启动安装', async () => {
+  it('发现新版本后自动下载并校验，用户确认后才启动安装', async () => {
     const contents = new TextEncoder().encode('installer fixture')
     const digest = createHash('sha256').update(contents).digest('hex')
     const fixture = {
@@ -62,9 +65,8 @@ describe('GitHub 更新版本', () => {
     vi.mocked(shell.openPath).mockResolvedValueOnce('')
     const service = new UpdateService(vi.fn())
     await service.check()
-    expect(service.state.phase).toBe('available')
-    await service.download()
     expect(service.state).toMatchObject({ phase: 'ready', progress: 100 })
+    expect(shell.openPath).not.toHaveBeenCalled()
     await service.install()
     expect(shell.openPath).toHaveBeenCalledOnce()
     expect(app.quit).toHaveBeenCalledOnce()
@@ -87,8 +89,31 @@ describe('GitHub 更新版本', () => {
       .mockResolvedValueOnce(new Response(contents, { status: 200 }))
     const service = new UpdateService(vi.fn())
     await service.check()
-    await service.download()
     expect(service.state).toMatchObject({ phase: 'error', error: '安装包校验失败，请重试' })
     await expect(service.install()).rejects.toThrow('更新尚未下载完成')
+  })
+
+  it('没有摘要时仍自动下载，并核对 GitHub 记录的文件大小', async () => {
+    const contents = new TextEncoder().encode('installer fixture')
+    vi.mocked(shell.openPath).mockClear()
+    vi.mocked(net.fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...release,
+            assets: [{ ...release.assets[0], size: contents.length, digest: null }],
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(contents, { status: 200 }))
+    const service = new UpdateService(vi.fn())
+    await service.check()
+    expect(service.state.phase).toBe('ready')
+    expect(shell.openPath).not.toHaveBeenCalled()
+    vi.mocked(shell.openPath).mockResolvedValueOnce('')
+    await service.install()
+    const path = vi.mocked(shell.openPath).mock.lastCall![0]
+    await rm(dirname(path), { recursive: true, force: true })
   })
 })

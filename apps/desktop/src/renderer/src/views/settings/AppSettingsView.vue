@@ -96,15 +96,15 @@ function changeTheme(theme: AppSettings['theme']): void {
         正在下载 v{{ updates.state.latestVersion }}：{{ updates.state.progress ?? 0 }}%
       </p>
       <p v-else-if="updates.state?.phase === 'ready'" class="card-note">
-        v{{ updates.state.latestVersion }} 已下载并校验，可以安装。
+        v{{ updates.state.latestVersion }} 已下载。确认安装后，应用会退出并打开安装程序。
       </p>
       <p v-else-if="updates.state?.latestVersion && updates.hasUpdate" class="card-note">
-        发现新版本 v{{ updates.state.latestVersion }}。
+        发现新版本 v{{ updates.state.latestVersion }}，正在准备下载。
       </p>
       <p v-else-if="!updates.state" class="card-note">正在读取更新状态…</p>
       <p v-else class="card-note">已是最新版本。</p>
       <p v-if="updates.hasUpdate && !updates.state?.canDownload" class="card-note">
-        可在 GitHub 发布页下载安装包。
+        安装包尚未上传，可稍后重试或查看 GitHub 发布页。
       </p>
       <div
         v-if="updates.state?.phase === 'downloading'"
@@ -130,18 +130,19 @@ function changeTheme(theme: AppSettings['theme']): void {
           class="primary-action"
           @click="updates.install()"
         >
-          立即安装
+          确认安装
         </button>
         <button
-          v-else-if="updates.hasUpdate && updates.state?.canDownload"
+          v-else-if="
+            updates.state?.phase === 'error' && updates.hasUpdate && updates.state?.canDownload
+          "
           class="primary-action"
-          :disabled="updates.state?.phase === 'downloading'"
           @click="updates.download()"
         >
-          下载更新
+          重新下载
         </button>
         <button
-          v-else-if="updates.hasUpdate"
+          v-else-if="updates.hasUpdate && !updates.state?.canDownload"
           class="dialog-button"
           @click="updates.openReleasePage()"
         >
