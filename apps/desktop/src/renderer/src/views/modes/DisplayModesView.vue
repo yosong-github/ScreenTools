@@ -2,6 +2,7 @@
 import { computed, shallowRef, watch } from 'vue'
 import type { DisplayMode } from '@screentools/contracts'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
@@ -99,17 +100,15 @@ watch(refreshPages, (count) => {
         <PanelIcon name="gauge" /><strong>刷新率</strong><span>{{ sizeText }}</span>
       </div>
       <div v-if="shownRates.length" class="choice-grid rate-grid">
-        <button
+        <ChoiceButton
           v-for="rate in shownRates"
           :key="rate"
-          class="choice-option"
-          :class="{ chosen: currentRate !== null && Math.abs(currentRate - rate) < 0.02 }"
-          :aria-pressed="currentRate !== null && Math.abs(currentRate - rate) < 0.02"
+          :pressed="currentRate !== null && Math.abs(currentRate - rate) < 0.02"
           :disabled="locked"
           @click="applyRate(rate)"
         >
           {{ formatRefreshRate(rate) }} Hz
-        </button>
+        </ChoiceButton>
       </div>
       <p v-else class="card-note">暂无可切换的刷新率。</p>
       <div v-if="refreshPages > 1" class="pager">
@@ -145,15 +144,13 @@ watch(refreshPages, (count) => {
         aria-label="可滚动的分辨率列表"
         tabindex="0"
       >
-        <button
+        <ChoiceButton
           v-for="resolution in resolutions"
           :key="`${resolution.width}x${resolution.height}`"
-          class="resolution-option"
-          :class="{
-            chosen:
-              selected?.mode.width === resolution.width &&
-              selected?.mode.height === resolution.height,
-          }"
+          variant="resolution"
+          :pressed="
+            selected?.mode.width === resolution.width && selected?.mode.height === resolution.height
+          "
           :disabled="locked"
           @click="applyResolution(resolution)"
         >
@@ -171,7 +168,7 @@ watch(refreshPages, (count) => {
             name="check"
             :size="16"
           />
-        </button>
+        </ChoiceButton>
       </div>
       <p v-else class="card-note">暂无可切换的分辨率。</p>
     </div>

@@ -4,6 +4,7 @@ import type { HardwareValue } from '@screentools/contracts'
 import { screenTools } from '@renderer/api/screen-tools'
 import { useControlsStore } from '@renderer/stores/controls'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 
 const props = defineProps<{
   deviceId: string | undefined
@@ -71,20 +72,18 @@ async function chooseSource(value: number): Promise<void> {
       </label>
     </div>
     <div v-if="sources.length" class="input-source-options" role="group" aria-label="选择输入源">
-      <button
+      <ChoiceButton
         v-for="value in sources"
         :key="value"
-        class="source-option"
-        type="button"
-        :class="{ chosen: value === capability?.current }"
-        :aria-pressed="value === capability?.current"
+        variant="source"
+        :pressed="value === capability?.current"
         :aria-label="`${sourceName(value)}${value === capability?.current ? '，当前输入源' : ''}`"
         :disabled="!switchingEnabled || locked || !deviceId || value === capability?.current"
         @click="chooseSource(value)"
       >
         <span class="truncate">{{ sourceName(value) }}</span>
         <PanelIcon v-if="value === capability?.current" name="check" :size="13" />
-      </button>
+      </ChoiceButton>
     </div>
     <p v-else class="card-note">
       {{ connection ?? '连接状态未知' }} ·

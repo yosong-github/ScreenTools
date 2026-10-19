@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { HardwareCapabilities } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import {
   sceneHardwareSettings,
   sceneMatches,
@@ -54,21 +55,19 @@ function applyScene(scene: ScenePreset): void {
       <PanelIcon name="sparkles" /><strong>场景</strong><span>{{ subtitle }}</span>
     </div>
     <div class="scene-grid">
-      <button
+      <ChoiceButton
         v-for="scene in scenePresets"
         :key="scene.id"
-        class="scene-option"
-        type="button"
+        variant="scene"
         :disabled="locked || !available"
-        :class="{ chosen: sceneMatches(capabilities, scene) }"
-        :aria-pressed="sceneMatches(capabilities, scene)"
+        :pressed="sceneMatches(capabilities, scene)"
         :aria-label="`${scene.label}${description(scene) ? `，${description(scene)}` : ''}`"
         :title="description(scene) || '当前显示器不支持场景调节'"
         @click="applyScene(scene)"
       >
         <PanelIcon :name="scene.icon" :size="22" />
         <span>{{ scene.label }}</span>
-      </button>
+      </ChoiceButton>
     </div>
   </div>
 </template>

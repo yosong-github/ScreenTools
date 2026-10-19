@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { HardwareValue } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import RangeSlider from '@renderer/components/RangeSlider.vue'
 import { useSharedHardwareSliderDraft } from './hardware-slider-context'
 import type { SliderFeature } from './useHardwareSliderDraft'
 
@@ -47,12 +48,8 @@ async function commit(next: number): Promise<void> {
 function bump(delta: -1 | 1): void {
   if (props.capability) void commit(Math.max(0, Math.min(100, value.value + delta)))
 }
-function preview(event: Event): void {
-  if (props.deviceId)
-    draft.preview(props.deviceId, props.feature, Number((event.target as HTMLInputElement).value))
-}
-function change(event: Event): void {
-  void commit(Number((event.target as HTMLInputElement).value))
+function preview(next: number): void {
+  if (props.deviceId) draft.preview(props.deviceId, props.feature, next)
 }
 </script>
 
@@ -72,16 +69,13 @@ function change(event: Event): void {
       >
         <PanelIcon name="minus" :size="16" />
       </button>
-      <input
-        :value="value"
-        :aria-label="inputLabel"
-        type="range"
-        min="0"
-        max="100"
+      <RangeSlider
+        :model-value="value"
+        :label="inputLabel"
         :disabled="locked"
         :style="{ '--fill': `${value}%` }"
-        @input="preview"
-        @change="change"
+        @update:model-value="preview"
+        @commit="commit"
       />
       <button
         class="slider-step"

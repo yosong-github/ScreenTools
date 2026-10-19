@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AppSettings } from '@screentools/contracts'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
 
@@ -40,19 +41,17 @@ function changeTheme(theme: AppSettings['theme']): void {
         <PanelIcon name="sun" /><strong>主题</strong><span>面板外观</span>
       </div>
       <div class="choice-grid theme-grid" role="group" aria-label="选择主题">
-        <button
+        <ChoiceButton
           v-for="option in themeOptions"
           :key="option.value"
-          class="choice-option inline-flex items-center justify-center gap-[5px]"
-          type="button"
+          class="inline-flex items-center justify-center gap-[5px]"
           :disabled="locked || !settings"
-          :class="{ chosen: (settings?.theme ?? 'system') === option.value }"
-          :aria-pressed="(settings?.theme ?? 'system') === option.value"
+          :pressed="(settings?.theme ?? 'system') === option.value"
           @click="changeTheme(option.value)"
         >
           <PanelIcon :name="option.icon" :size="15" />
           {{ option.label }}
-        </button>
+        </ChoiceButton>
       </div>
       <p class="card-note">仅影响 ScreenTools 外观，不会更改 Windows 主题。</p>
     </div>

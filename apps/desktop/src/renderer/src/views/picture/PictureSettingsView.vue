@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ChangePlan } from '@screentools/contracts'
 import HardwareSlider from '@renderer/components/hardware/HardwareSlider.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
 import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
@@ -39,15 +40,14 @@ function hdrChange(event: Event): void {
         <PanelIcon name="layout" /><strong>显示拓扑</strong><span>20 秒确认</span>
       </div>
       <div class="choice-grid topology-grid">
-        <button
+        <ChoiceButton
           v-for="(name, key) in topologies"
           :key="key"
-          class="choice-option"
           :disabled="locked || !selected"
           @click="applyTopology(key)"
         >
           {{ name }}
-        </button>
+        </ChoiceButton>
       </div>
     </div>
     <ScenePresets :device-id="selected?.id" :capabilities="capabilities" :locked="locked" />

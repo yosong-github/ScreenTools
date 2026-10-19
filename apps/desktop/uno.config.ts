@@ -2,6 +2,7 @@ import { defineConfig, presetWind3 } from 'unocss'
 
 export default defineConfig({
   presets: [presetWind3({ preflight: false })],
+  safelist: ['choice-option', 'scene-option', 'source-option', 'resolution-option'],
   rules: [
     ['surface-elevation', { 'box-shadow': 'var(--card-shadow)' }],
     ['panel-elevation', { 'box-shadow': 'var(--panel-shadow)' }],

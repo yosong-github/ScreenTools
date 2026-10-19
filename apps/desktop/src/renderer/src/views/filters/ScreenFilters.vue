@@ -3,6 +3,7 @@ import { computed, shallowRef, watch } from 'vue'
 import type { ScreenFilterId, ScreenFilterState } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
 import PanelIcon from '@renderer/components/PanelIcon.vue'
+import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import FilterPreview from './FilterPreview.vue'
 
 const props = defineProps<{
@@ -47,24 +48,20 @@ function applyFilter(filter: ScreenFilterId): void {
         <PanelIcon name="contrast" /><strong>屏幕滤镜</strong><span>所有显示器</span>
       </div>
       <div class="scene-grid">
-        <button
+        <ChoiceButton
           v-for="filter in filters"
           :key="filter.id"
-          class="scene-option"
-          type="button"
+          variant="scene"
           :disabled="disabled"
-          :class="{
-            chosen: state?.active === filter.id,
-            previewing: previewFilter === filter.id && state?.active !== filter.id,
-          }"
-          :aria-pressed="state?.active === filter.id"
+          :pressed="state?.active === filter.id"
+          :class="{ previewing: previewFilter === filter.id && state?.active !== filter.id }"
           @pointerenter="previewFilter = filter.id"
           @focus="previewFilter = filter.id"
           @click="applyFilter(filter.id)"
         >
           <PanelIcon :name="filter.icon" :size="22" />
           <span>{{ filter.label }}</span>
-        </button>
+        </ChoiceButton>
       </div>
       <p class="card-note">{{ note }}</p>
     </div>
@@ -78,6 +75,9 @@ function applyFilter(filter: ScreenFilterId): void {
   flex-direction: column;
   gap: 11px;
   min-height: 0;
+  /* 卡片保持原宽度，向滚动容器外扩出阴影空间。 */
+  margin-inline: -9px;
+  padding: 0 9px 12px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
