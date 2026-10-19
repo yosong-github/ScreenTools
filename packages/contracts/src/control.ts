@@ -63,6 +63,10 @@ export type ControlCommand =
   | { type: 'copy-diagnostics' }
   | { type: 'import-profiles' }
   | { type: 'export-profiles' }
+  | { type: 'screen-filter'; filter: ScreenFilterId }
+  | { type: 'apply-custom-filter'; id: string }
+  | { type: 'save-custom-filter'; name: string; settings: CustomFilterSettings }
+  | { type: 'delete-custom-filter'; id: string }
 export interface NativeDisplay extends DisplaySetting {
   name: string
   connection: string
@@ -88,13 +92,45 @@ export interface PendingChange {
   token: string
   expiresAt: number
 }
+export type ScreenFilterId =
+  | 'off'
+  | 'reading'
+  | 'night'
+  | 'grayscale'
+  | 'fps-competitive'
+  | 'fps-vivid'
+  | 'fps-dark'
+  | 'fps-focus'
+export interface CustomFilterSettings {
+  brightness: number
+  contrast: number
+  temperature: number
+  blackLevel: number
+  red: number
+  green: number
+  blue: number
+  saturation: number
+}
+export interface CustomScreenFilter {
+  id: string
+  name: string
+  settings: CustomFilterSettings
+}
+export interface ScreenFilterState {
+  available: boolean
+  active: ScreenFilterId | 'custom'
+  customId?: string | null
+  reason: string | null
+}
 export interface ControlState {
   devices: NativeDisplay[]
   profiles: DisplayProfile[]
+  customFilters: CustomScreenFilter[]
   settings: AppSettings
   launchAtLoginAvailable: boolean
   capabilities: Record<string, HardwareCapabilities>
   pending: PendingChange | null
+  screenFilter: ScreenFilterState
   error: string | null
   logs: { time: string; message: string }[]
 }

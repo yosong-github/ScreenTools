@@ -35,11 +35,27 @@ export interface DisplaySnapshot {
   identity: 'session'
 }
 
+export interface UpdateState {
+  phase: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error'
+  currentVersion: string
+  latestVersion: string | null
+  releaseUrl: string | null
+  canDownload: boolean
+  progress: number | null
+  error: string | null
+}
+
 export interface ScreenToolsApi {
   platform: string
   version: string
   quitApp(): Promise<void>
   confirmInputSourceSwitch(): Promise<boolean>
+  getUpdateState(): Promise<UpdateState>
+  checkForUpdates(): Promise<UpdateState>
+  downloadUpdate(): Promise<UpdateState>
+  installUpdate(): Promise<void>
+  openUpdatePage(): Promise<void>
+  onUpdateChanged(listener: (state: UpdateState) => void): () => void
   getDisplaySnapshot(): Promise<DisplaySnapshot>
   onDisplaysChanged(listener: () => void): () => void
   getControlState(): Promise<ControlState>

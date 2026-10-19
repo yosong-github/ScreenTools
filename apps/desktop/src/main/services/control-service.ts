@@ -1,30 +1,68 @@
 import { app, clipboard, dialog, globalShortcut } from 'electron'
+import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { defaultSettings } from '@screentools/contracts'
+import { createCustomFilterMatrix, defaultCustomFilterSettings } from '@screentools/display-core'
 import type {
   AppSettings,
   ChangePlan,
   ControlCommand,
   ControlState,
+  CustomScreenFilter,
   DisplayProfile,
   HardwareCapabilities,
   HardwareSetting,
   NativeDisplay,
   PendingChange,
+  ScreenFilterId,
+  ScreenFilterState,
 } from '@screentools/contracts'
 import { NativeClient } from './native-client'
 
 const POLL_INTERVAL_MS = 60_000
+const screenFilterLabels: Record<ScreenFilterId, string> = {
+  off: '原色',
+  reading: '阅读',
+  night: '夜间',
+  grayscale: '灰度',
+  'fps-competitive': 'FPS 竞技',
+  'fps-vivid': 'FPS 鲜艳',
+  'fps-dark': 'FPS 暗场',
+  'fps-focus': 'FPS 专注',
+}
+
+function isCustomFilter(value: unknown): value is CustomScreenFilter {
+  if (!value || typeof value !== 'object') return false
+  const filter = value as Partial<CustomScreenFilter>
+  if (
+    typeof filter.id !== 'string' ||
+    !/^[0-9a-f-]{36}$/i.test(filter.id) ||
+    typeof filter.name !== 'string' ||
+    !filter.name.trim() ||
+    filter.name.length > 40 ||
+    !filter.settings ||
+    typeof filter.settings !== 'object'
+  )
+    return false
+  try {
+    createCustomFilterMatrix({ ...defaultCustomFilterSettings, ...filter.settings })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export function createControlService(dataDir: string, changed: () => void, showWindow: () => void) {
   const state: ControlState = {
     devices: [],
     profiles: [],
+    customFilters: [],
     settings: { ...defaultSettings, aliases: {} },
     launchAtLoginAvailable: app.isPackaged && process.platform === 'win32',
     capabilities: {},
     pending: null,
+    screenFilter: { available: false, active: 'off', reason: '正在检测屏幕滤镜能力' },
     error: null,
     logs: [],
   }
@@ -58,6 +96,8 @@ export function createControlService(dataDir: string, changed: () => void, showW
       pendingHardware = []
     }
     state.error = error ?? null
+    if (error && !stopping)
+      state.screenFilter = { available: false, active: 'off', reason: '原生工作进程已退出' }
     record(error ?? '显示配置已自动恢复')
     void refresh().catch(() => {})
   })
@@ -78,7 +118,12 @@ export function createControlService(dataDir: string, changed: () => void, showW
   async function save(): Promise<void> {
     if (!validStorage) throw new Error('本地配置损坏，已保留原文件；请先备份并修复 control.json')
     const contents = JSON.stringify(
-      { version: 1, settings: state.settings, profiles: state.profiles },
+      {
+        version: 1,
+        settings: state.settings,
+        profiles: state.profiles,
+        customFilters: state.customFilters,
+      },
       null,
       2,
     )
@@ -107,6 +152,18 @@ export function createControlService(dataDir: string, changed: () => void, showW
     }
     changed()
     return structuredClone(state)
+  }
+  async function refreshScreenFilter(): Promise<void> {
+    try {
+      state.screenFilter = await native.request<ScreenFilterState>('screen-filter-status')
+    } catch {
+      state.screenFilter = {
+        available: false,
+        active: 'off',
+        reason: '当前 Windows 环境无法使用屏幕滤镜',
+      }
+    }
+    changed()
   }
   async function hardware(
     id: string,
@@ -260,13 +317,18 @@ export function createControlService(dataDir: string, changed: () => void, showW
   }
   async function execute(command: ControlCommand): Promise<ControlState> {
     queuedCommands++
-    let before = { profiles: state.profiles, settings: state.settings }
+    let before = {
+      profiles: state.profiles,
+      customFilters: state.customFilters,
+      settings: state.settings,
+    }
     const task = queue
       .catch(() => {})
       .then(async () => {
         await pollTask?.catch(() => {})
         before = {
           profiles: structuredClone(state.profiles),
+          customFilters: structuredClone(state.customFilters),
           settings: structuredClone(state.settings),
         }
         if (stopping) throw new Error('应用正在退出')
@@ -274,7 +336,14 @@ export function createControlService(dataDir: string, changed: () => void, showW
           throw new Error('请先确认或恢复显示配置')
         if (
           !validStorage &&
-          ['settings', 'save-profile', 'delete-profile', 'import-profiles'].includes(command.type)
+          [
+            'settings',
+            'save-profile',
+            'delete-profile',
+            'import-profiles',
+            'save-custom-filter',
+            'delete-custom-filter',
+          ].includes(command.type)
         )
           throw new Error('本地配置损坏，请先备份并修复 control.json')
         switch (command.type) {
@@ -314,6 +383,49 @@ export function createControlService(dataDir: string, changed: () => void, showW
           case 'hardware':
             await hardware(command.setting.id, command.setting)
             break
+          case 'screen-filter': {
+            if (!Object.hasOwn(screenFilterLabels, command.filter))
+              throw new Error('未知的屏幕滤镜')
+            state.screenFilter = await native.request<ScreenFilterState>(
+              'screen-filter-apply',
+              command.filter,
+            )
+            record(`屏幕滤镜已切换为：${screenFilterLabels[command.filter]}`)
+            break
+          }
+          case 'apply-custom-filter': {
+            const filter = state.customFilters.find((entry) => entry.id === command.id)
+            if (!filter) throw new Error('自定义滤镜方案不存在')
+            state.screenFilter = await native.request<ScreenFilterState>(
+              'screen-filter-apply-custom',
+              { id: filter.id, matrix: createCustomFilterMatrix(filter.settings) },
+            )
+            record('屏幕滤镜已切换为自定义方案')
+            break
+          }
+          case 'save-custom-filter': {
+            const name = command.name.trim()
+            if (!name || name.length > 40) throw new Error('滤镜名称须为 1 到 40 个字符')
+            if (state.customFilters.length >= 20) throw new Error('自定义滤镜方案数量已达上限')
+            createCustomFilterMatrix(command.settings)
+            state.customFilters = [
+              ...state.customFilters,
+              { id: randomUUID(), name, settings: { ...command.settings } },
+            ]
+            await save()
+            record('自定义滤镜方案已保存')
+            break
+          }
+          case 'delete-custom-filter': {
+            if (state.screenFilter.customId === command.id)
+              throw new Error('请先关闭当前滤镜，再删除方案')
+            if (!state.customFilters.some((entry) => entry.id === command.id))
+              throw new Error('自定义滤镜方案不存在')
+            state.customFilters = state.customFilters.filter((entry) => entry.id !== command.id)
+            await save()
+            record('自定义滤镜方案已删除')
+            break
+          }
           case 'save-profile': {
             if (
               state.profiles.length >= 100 &&
@@ -408,7 +520,14 @@ export function createControlService(dataDir: string, changed: () => void, showW
       return await task
     } catch (error) {
       if (
-        ['settings', 'save-profile', 'delete-profile', 'import-profiles'].includes(command.type)
+        [
+          'settings',
+          'save-profile',
+          'delete-profile',
+          'import-profiles',
+          'save-custom-filter',
+          'delete-custom-filter',
+        ].includes(command.type)
       ) {
         if (command.type === 'settings') {
           try {
@@ -421,6 +540,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
           }
         }
         state.profiles = before.profiles
+        state.customFilters = before.customFilters
         state.settings = before.settings
       }
       // 文件系统异常可能含用户目录，只保留错误码；设备参数校验错误保留可解释文本。
@@ -443,6 +563,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
         version: number
         settings: AppSettings
         profiles: DisplayProfile[]
+        customFilters?: unknown
       }
       if (data.version !== 1) throw new Error('版本不支持')
       state.settings = {
@@ -454,6 +575,15 @@ export function createControlService(dataDir: string, changed: () => void, showW
           : 'system',
       }
       state.profiles = data.profiles
+      state.customFilters = Array.isArray(data.customFilters)
+        ? data.customFilters
+            .filter(isCustomFilter)
+            .slice(0, 20)
+            .map((filter) => ({
+              ...filter,
+              settings: { ...defaultCustomFilterSettings, ...filter.settings },
+            }))
+        : []
       // 已存在配置：以用户保存的状态为准，不再套用默认值。
       loadedSettings = true
     } catch (error) {
@@ -493,6 +623,7 @@ export function createControlService(dataDir: string, changed: () => void, showW
       .sort()
       .join(',')
     await probeNewDevices()
+    await refreshScreenFilter()
     if (state.settings.startupProfileId)
       await execute({ type: 'apply-profile', id: state.settings.startupProfileId }).catch(() => {})
     pollTimer = setInterval(() => {

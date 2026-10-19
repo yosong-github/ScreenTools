@@ -14,11 +14,45 @@ vi.mock('electron', () => ({
   },
 }))
 vi.mock('../src/main/window', () => ({ setPanelModalOpen: vi.fn() }))
-import { registerAppIpc, registerControlIpc, registerIpcHandlers } from '../src/main/ipc'
+import {
+  registerAppIpc,
+  registerControlIpc,
+  registerIpcHandlers,
+  registerUpdateIpc,
+} from '../src/main/ipc'
 import { defaultSettings } from '@screentools/contracts'
 import type { ControlService } from '../src/main/services/control-service'
+import type { UpdateService } from '../src/main/services/update-service'
 
 describe('IPC 边界', () => {
+  it('更新检查和安装只接受面板顶层页面请求', async () => {
+    const frame = {}
+    const webContents = { mainFrame: frame }
+    const window = { isDestroyed: () => false, webContents } as unknown as BrowserWindow
+    const service = {
+      state: { phase: 'idle' },
+      check: vi.fn().mockResolvedValue({ phase: 'idle' }),
+      download: vi.fn(),
+      install: vi.fn(),
+      openReleasePage: vi.fn(),
+    } as unknown as UpdateService
+    const cleanup = registerUpdateIpc(service, () => window)
+    try {
+      expect(() => handlers.get('update:check')!({ sender: {}, senderFrame: frame })).toThrow(
+        '不允许的 IPC 来源',
+      )
+      expect(() =>
+        handlers.get('update:install')!({ sender: webContents, senderFrame: {} }),
+      ).toThrow('不允许的 IPC 来源')
+      expect(service.check).not.toHaveBeenCalled()
+      await expect(
+        handlers.get('update:check')!({ sender: webContents, senderFrame: frame }),
+      ).resolves.toEqual({ phase: 'idle' })
+    } finally {
+      cleanup()
+    }
+    expect(handlers.size).toBe(0)
+  })
   it('只允许面板顶层页面请求退出应用', () => {
     const frame = {}
     const webContents = { mainFrame: frame }
@@ -84,6 +118,7 @@ describe('IPC 边界', () => {
       settings: defaultSettings,
       capabilities: {},
       pending: null,
+      screenFilter: { available: true, active: 'off' as const, reason: null },
       error: null,
       logs: [],
     }

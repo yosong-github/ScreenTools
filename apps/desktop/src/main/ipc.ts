@@ -4,6 +4,7 @@ import { displayChannels } from '@screentools/contracts'
 import type { ControlCommand } from '@screentools/contracts'
 import type { ScreenToolsCore } from './core/screentools-core'
 import type { ControlService } from './services/control-service'
+import type { UpdateService } from './services/update-service'
 import { setPanelModalOpen } from './window'
 
 export function registerAppIpc(
@@ -102,5 +103,34 @@ export function registerControlIpc(
   return () => {
     ipcMain.removeHandler('controls:state')
     ipcMain.removeHandler('controls:execute')
+  }
+}
+
+export function registerUpdateIpc(
+  service: UpdateService,
+  getWindow: () => BrowserWindow | null,
+): () => void {
+  const handlers = {
+    'update:state': () => service.state,
+    'update:check': () => service.check(),
+    'update:download': () => service.download(),
+    'update:install': () => service.install(),
+    'update:open-release': () => service.openReleasePage(),
+  }
+  for (const [channel, handler] of Object.entries(handlers)) {
+    ipcMain.handle(channel, (event) => {
+      const window = getWindow()
+      if (
+        !window ||
+        window.isDestroyed() ||
+        event.sender !== window.webContents ||
+        event.senderFrame !== window.webContents.mainFrame
+      )
+        throw new Error('不允许的 IPC 来源')
+      return handler()
+    })
+  }
+  return () => {
+    for (const channel of Object.keys(handlers)) ipcMain.removeHandler(channel)
   }
 }

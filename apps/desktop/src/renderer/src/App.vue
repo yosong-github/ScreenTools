@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import TrayPanel from '@renderer/components/tray/TrayPanel.vue'
+import TrayLayout from '@renderer/layouts/TrayLayout.vue'
 </script>
 
 <template>
-  <TrayPanel />
+  <TrayLayout />
 </template>

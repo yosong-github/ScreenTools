@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { displayChannels } from '@screentools/contracts'
-import type { ScreenToolsApi, ControlState, DisplaySnapshot } from '@screentools/contracts'
+import type {
+  ScreenToolsApi,
+  ControlState,
+  DisplaySnapshot,
+  UpdateState,
+} from '@screentools/contracts'
 import { version } from '../../package.json'
 
 // 窗口保持静止，只让页面图层做合成动画，避免逐帧调用原生窗口接口。
@@ -33,6 +38,26 @@ const api: Readonly<ScreenToolsApi> = {
   },
   async confirmInputSourceSwitch() {
     return ipcRenderer.invoke('app:confirm-input-source') as Promise<boolean>
+  },
+  async getUpdateState() {
+    return ipcRenderer.invoke('update:state') as Promise<UpdateState>
+  },
+  async checkForUpdates() {
+    return ipcRenderer.invoke('update:check') as Promise<UpdateState>
+  },
+  async downloadUpdate() {
+    return ipcRenderer.invoke('update:download') as Promise<UpdateState>
+  },
+  async installUpdate() {
+    await ipcRenderer.invoke('update:install')
+  },
+  async openUpdatePage() {
+    await ipcRenderer.invoke('update:open-release')
+  },
+  onUpdateChanged(listener) {
+    const handler = (_event: Electron.IpcRendererEvent, state: UpdateState): void => listener(state)
+    ipcRenderer.on('update:changed', handler)
+    return () => ipcRenderer.removeListener('update:changed', handler)
   },
   onControlChanged(listener) {
     const handler = (): void => listener()
