@@ -433,6 +433,84 @@ describe('控制服务', () => {
       await service.dispose()
     }
   })
+  it('重启后恢复上次的预设滤镜，选择原色后不再恢复', async () => {
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    await service.init()
+    mocks.request.mockResolvedValueOnce({ available: true, active: 'night', reason: null })
+    await service.execute({ type: 'screen-filter', filter: 'night' })
+    const saved = String(
+      mocks.write.mock.calls.findLast(([path]) => String(path).endsWith('control.json.tmp'))?.[1],
+    )
+    expect(JSON.parse(saved).screenFilter).toEqual({ active: 'night', customId: null })
+    await service.dispose()
+
+    mocks.read.mockResolvedValueOnce(saved)
+    mocks.request.mockClear()
+    mocks.request.mockImplementation(async (operation: string) =>
+      operation === 'snapshot'
+        ? [device]
+        : operation === 'screen-filter-status'
+          ? { available: true, active: 'off', reason: null }
+          : operation === 'screen-filter-apply'
+            ? { available: true, active: 'night', reason: null }
+            : {},
+    )
+    const reopened = createControlService('test-data', vi.fn(), vi.fn())
+    await reopened.init()
+    expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply', 'night')
+    expect(reopened.state.screenFilter.active).toBe('night')
+    mocks.request.mockResolvedValueOnce({ available: true, active: 'off', reason: null })
+    await reopened.execute({ type: 'screen-filter', filter: 'off' })
+    const reset = String(
+      mocks.write.mock.calls.findLast(([path]) => String(path).endsWith('control.json.tmp'))?.[1],
+    )
+    expect(JSON.parse(reset).screenFilter).toEqual({ active: 'off', customId: null })
+    await reopened.dispose()
+
+    mocks.read.mockResolvedValueOnce(reset)
+    mocks.request.mockClear()
+    const finalOpen = createControlService('test-data', vi.fn(), vi.fn())
+    await finalOpen.init()
+    expect(mocks.request).not.toHaveBeenCalledWith('screen-filter-apply', expect.anything())
+    await finalOpen.dispose()
+  })
+
+  it('重启后恢复上次的自定义滤镜', async () => {
+    const filter = {
+      id: '12345678-1234-1234-1234-123456789abc',
+      name: '暖色工作',
+      settings: defaultCustomFilterSettings,
+    }
+    mocks.read.mockResolvedValueOnce(
+      JSON.stringify({
+        version: 1,
+        settings: defaultSettings,
+        profiles: [],
+        customFilters: [filter],
+        screenFilter: { active: 'custom', customId: filter.id },
+      }),
+    )
+    mocks.request.mockImplementation(async (operation: string) =>
+      operation === 'snapshot'
+        ? [device]
+        : operation === 'screen-filter-status'
+          ? { available: true, active: 'off', reason: null }
+          : operation === 'screen-filter-apply-custom'
+            ? { available: true, active: 'custom', customId: filter.id, reason: null }
+            : {},
+    )
+    const service = createControlService('test-data', vi.fn(), vi.fn())
+    try {
+      await service.init()
+      expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply-custom', {
+        id: filter.id,
+        matrix: createCustomFilterMatrix(filter.settings),
+      })
+      expect(service.state.screenFilter.customId).toBe(filter.id)
+    } finally {
+      await service.dispose()
+    }
+  })
   it('保存并应用自定义滤镜，保护使用中的方案', async () => {
     const service = createControlService('test-data', vi.fn(), vi.fn())
     const settings = {
@@ -472,6 +550,13 @@ describe('控制服务', () => {
       expect(mocks.request).toHaveBeenCalledWith('screen-filter-apply-custom', {
         id: saved.id,
         matrix: createCustomFilterMatrix(settings),
+      })
+      const activeWrite = mocks.write.mock.calls.findLast(([path]) =>
+        String(path).endsWith('control.json.tmp'),
+      )
+      expect(JSON.parse(String(activeWrite?.[1])).screenFilter).toEqual({
+        active: 'custom',
+        customId: saved.id,
       })
       await expect(service.execute({ type: 'delete-custom-filter', id: saved.id })).rejects.toThrow(
         '先关闭当前滤镜',
