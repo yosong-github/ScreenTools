@@ -4,11 +4,14 @@ import PanelIcon from '@renderer/components/PanelIcon.vue'
 import ChoiceButton from '@renderer/components/ChoiceButton.vue'
 import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
+import { useUpdatesStore } from '@renderer/stores/updates'
+import { screenTools } from '@renderer/api/screen-tools'
 
 defineOptions({ name: 'AppSettingsView' })
 
 const { settings, launchAtLoginAvailable: available, locked } = useTraySession()
 const controls = useControlsStore()
+const updates = useUpdatesStore()
 const themeOptions = [
   { value: 'system', label: '跟随系统', icon: 'monitor' },
   { value: 'light', label: '白色', icon: 'sun' },
@@ -77,5 +80,74 @@ function changeTheme(theme: AppSettings['theme']): void {
         available ? '也可以在 Windows 的“启动应用”中管理此设置。' : '开机自启动仅在安装版中可用。'
       }}
     </p>
+    <div class="section-caption"><span>版本更新</span></div>
+    <div class="card compact-card update-card">
+      <div class="card-title">
+        <PanelIcon name="refresh" /><strong>ScreenTools</strong>
+        <span>v{{ updates.state?.currentVersion ?? screenTools.version }}</span>
+      </div>
+      <p v-if="updates.state?.error" class="card-note update-error" role="alert">
+        {{ updates.state.error }}
+      </p>
+      <p v-else-if="updates.state?.phase === 'checking'" class="card-note">
+        正在检查 GitHub 最新版本…
+      </p>
+      <p v-else-if="updates.state?.phase === 'downloading'" class="card-note">
+        正在下载 v{{ updates.state.latestVersion }}：{{ updates.state.progress ?? 0 }}%
+      </p>
+      <p v-else-if="updates.state?.phase === 'ready'" class="card-note">
+        v{{ updates.state.latestVersion }} 已下载并校验，可以安装。
+      </p>
+      <p v-else-if="updates.state?.latestVersion && updates.hasUpdate" class="card-note">
+        发现新版本 v{{ updates.state.latestVersion }}。
+      </p>
+      <p v-else-if="!updates.state" class="card-note">正在读取更新状态…</p>
+      <p v-else class="card-note">已是最新版本。</p>
+      <p v-if="updates.hasUpdate && !updates.state?.canDownload" class="card-note">
+        可在 GitHub 发布页下载安装包。
+      </p>
+      <div
+        v-if="updates.state?.phase === 'downloading'"
+        class="update-progress"
+        role="progressbar"
+        :aria-valuenow="updates.state.progress ?? 0"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-label="更新下载进度"
+      >
+        <span :style="{ width: `${updates.state.progress ?? 0}%` }"></span>
+      </div>
+      <div class="update-actions">
+        <button
+          class="dialog-button"
+          :disabled="updates.state?.phase === 'checking' || updates.state?.phase === 'downloading'"
+          @click="updates.check()"
+        >
+          检查更新
+        </button>
+        <button
+          v-if="updates.state?.phase === 'ready'"
+          class="primary-action"
+          @click="updates.install()"
+        >
+          立即安装
+        </button>
+        <button
+          v-else-if="updates.hasUpdate && updates.state?.canDownload"
+          class="primary-action"
+          :disabled="updates.state?.phase === 'downloading'"
+          @click="updates.download()"
+        >
+          下载更新
+        </button>
+        <button
+          v-else-if="updates.hasUpdate"
+          class="dialog-button"
+          @click="updates.openReleasePage()"
+        >
+          查看发布页
+        </button>
+      </div>
+    </div>
   </section>
 </template>

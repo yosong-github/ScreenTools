@@ -127,6 +127,9 @@ select:focus-visible {
   background: var(--accent-bg);
   color: var(--accent-text);
 }
+.header-icon {
+  position: relative;
+}
 :root:not([data-theme='light']) .header-icon.active,
 :root:not([data-theme='light']) .header-icon.active:hover {
   background: var(--selected-bg);
@@ -297,6 +300,45 @@ input[type='range']::-webkit-slider-thumb {
 .settings-page .card-note {
   flex-basis: 100%;
   margin: 2px 0 0 28px;
+}
+.settings-page {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.update-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: #f04438;
+}
+.update-card .card-note {
+  margin: 9px 0 0;
+}
+.update-card .update-error {
+  color: var(--error-text);
+}
+.update-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+.update-progress {
+  height: 5px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--track);
+}
+.update-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
 }
 .resolution-list {
   scrollbar-width: none;

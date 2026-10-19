@@ -10,12 +10,15 @@ import { provideTraySession } from '@renderer/composables/useTraySession'
 import { trayTabs, type TrayTab } from '@renderer/router'
 import { useControlsStore } from '@renderer/stores/controls'
 import { useDisplaysStore } from '@renderer/stores/displays'
+import { useUpdatesStore } from '@renderer/stores/updates'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
 
 const route = useRoute()
 const router = useRouter()
 const controls = useControlsStore()
 const displaysStore = useDisplaysStore()
+const updates = useUpdatesStore()
+const { hasUpdate } = storeToRefs(updates)
 const { state, busy, error: controlError } = storeToRefs(controls)
 const { displays, loading, error: displayError } = storeToRefs(displaysStore)
 const lastTab = shallowRef<TrayTab>('info')
@@ -108,6 +111,7 @@ watch(
   { immediate: true },
 )
 onMounted(() => {
+  updates.start()
   displaysStore.start()
   controls.start()
   clock = setInterval(() => {
@@ -115,6 +119,7 @@ onMounted(() => {
   }, 250)
 })
 onUnmounted(() => {
+  updates.stop()
   displaysStore.stop()
   controls.stop()
   clearInterval(clock)
@@ -143,12 +148,15 @@ onUnmounted(() => {
       <button
         class="header-icon"
         :class="{ active: settingsOpen }"
-        :aria-label="settingsOpen ? '返回显示器控制' : '打开设置'"
-        :title="settingsOpen ? '返回显示器控制' : '打开设置'"
+        :aria-label="
+          settingsOpen ? '返回显示器控制' : hasUpdate ? '打开设置，有新版本' : '打开设置'
+        "
+        :title="settingsOpen ? '返回显示器控制' : hasUpdate ? '打开设置，有新版本' : '打开设置'"
         :aria-pressed="settingsOpen"
         @click="toggleSettings"
       >
         <PanelIcon name="settings" :size="20" />
+        <i v-if="hasUpdate" class="update-badge" aria-hidden="true"></i>
       </button>
       <button
         class="header-icon"

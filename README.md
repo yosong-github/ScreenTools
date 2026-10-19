@@ -33,7 +33,7 @@
 
 前往 [最新版本发布页](https://github.com/yosong-github/ScreenTools/releases/latest)，在 **Assets** 中下载 `ScreenTools-版本号-win-x64.exe` 并运行。需要旧版本时，请查看[全部版本](https://github.com/yosong-github/ScreenTools/releases)。`Source code` 压缩包是源码，不是安装程序。
 
-目前仅提供 **Windows x64** 安装包，未配置发布者签名或应用内自动更新。首次安装可能出现 Windows 安全提示，请核对下载地址是否为本仓库的 GitHub Release。新版本的 Release 页面可能先于 EXE 出现；如果 Assets 中暂时只有源码包，请等待 Windows 构建完成后刷新页面。
+目前仅提供 **Windows x64** 安装包，未配置发布者签名。安装版会检查本仓库的最新 GitHub Release；发现新版本时，设置图标会显示红点，可在“应用设置 → 版本更新”下载并安装。安装包会与 GitHub 提供的 SHA-256 摘要核对；如果新版安装包尚未上传或没有摘要，可从发布页手动下载。首次安装可能出现 Windows 安全提示，请核对下载地址是否为本仓库的 GitHub Release。新版本的 Release 页面可能先于 EXE 出现；如果 Assets 中暂时只有源码包，请等待 Windows 构建完成后刷新页面。
 
 ## 简介
 

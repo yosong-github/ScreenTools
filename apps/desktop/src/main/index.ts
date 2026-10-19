@@ -4,9 +4,10 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { createTrayWindow, showTrayWindow, toggleTrayWindow } from './window'
 import { createScreenToolsCore } from './core/screentools-core'
 import type { ScreenToolsCore } from './core/screentools-core'
-import { registerIpcHandlers, registerControlIpc, registerAppIpc } from './ipc'
+import { registerIpcHandlers, registerControlIpc, registerAppIpc, registerUpdateIpc } from './ipc'
 import { createControlService } from './services/control-service'
 import type { ControlService } from './services/control-service'
+import { UpdateService } from './services/update-service'
 import type { Tray } from 'electron'
 import { createTray } from './tray'
 
@@ -17,6 +18,8 @@ let control: ControlService | undefined
 let tray: Tray | undefined
 let unregisterControl: (() => void) | undefined
 let unregisterApp: (() => void) | undefined
+let unregisterUpdate: (() => void) | undefined
+let updater: UpdateService | undefined
 let stopDisplaySubscription: (() => void) | undefined
 let quitting = false
 let disposed = false
@@ -77,6 +80,11 @@ if (!app.requestSingleInstanceLock()) {
         showPanel,
       )
       unregisterControl = registerControlIpc(control, () => mainWindow)
+      updater = new UpdateService((state) => {
+        if (mainWindow && !mainWindow.isDestroyed())
+          mainWindow.webContents.send('update:changed', state)
+      })
+      unregisterUpdate = registerUpdateIpc(updater, () => mainWindow)
       stopDisplaySubscription = core.subscribe(() => {
         void control?.onDisplaysChanged().catch(console.error)
       })
@@ -86,6 +94,7 @@ if (!app.requestSingleInstanceLock()) {
       })
       tray = createTray(control, togglePanel, () => app.quit())
       await control.init()
+      updater.start()
       app.on('activate', showPanel)
     })
     .catch((error: unknown) => {
@@ -101,6 +110,8 @@ if (!app.requestSingleInstanceLock()) {
     unregisterIpc?.()
     unregisterControl?.()
     unregisterApp?.()
+    unregisterUpdate?.()
+    updater?.stop()
     stopDisplaySubscription?.()
     core?.dispose()
     tray?.destroy()
