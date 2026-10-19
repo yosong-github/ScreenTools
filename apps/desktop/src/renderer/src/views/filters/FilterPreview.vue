@@ -7,7 +7,7 @@ import {
   toSvgColorMatrixValues,
 } from '@screentools/display-core'
 import previewImage from '@renderer/assets/filter-preview.png'
-import PanelIcon from '../PanelIcon.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
 
 const props = defineProps<{
   filter: ScreenFilterId

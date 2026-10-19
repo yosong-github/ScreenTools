@@ -1,49 +1,44 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { screenTools } from '@renderer/api/screen-tools'
+import { provideHardwareSliderDraft } from '@renderer/components/hardware/hardware-slider-context'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
+import { useAppearanceTheme } from '@renderer/composables/useAppearanceTheme'
+import { provideTraySession } from '@renderer/composables/useTraySession'
+import { trayTabs, type TrayTab } from '@renderer/router'
 import { useControlsStore } from '@renderer/stores/controls'
 import { useDisplaysStore } from '@renderer/stores/displays'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
-import { useAppearanceTheme } from '@renderer/theme/useAppearanceTheme'
-import { provideHardwareSliderDraft } from './hardware/hardware-slider-context'
-import PanelIcon from './PanelIcon.vue'
 
-type Tab = 'info' | 'picture' | 'modes' | 'filters'
-const tabs: { id: Tab; icon: string; label: string }[] = [
-  { id: 'info', icon: 'monitor', label: '屏幕信息' },
-  { id: 'picture', icon: 'sliders', label: '画面配置' },
-  { id: 'modes', icon: 'resolution', label: '刷新率与清晰度' },
-  { id: 'filters', icon: 'contrast', label: '屏幕滤镜' },
-]
-const ScreenInfoPage = defineAsyncComponent(() => import('./pages/ScreenInfoPage.vue'))
-const PictureSettingsPage = defineAsyncComponent(() => import('./pages/PictureSettingsPage.vue'))
-const DisplayModesPage = defineAsyncComponent(() => import('./pages/DisplayModesPage.vue'))
-const ScreenFiltersPage = defineAsyncComponent(() => import('./pages/ScreenFiltersPage.vue'))
-const AppSettingsPage = defineAsyncComponent(() => import('./pages/AppSettingsPage.vue'))
-
+const route = useRoute()
+const router = useRouter()
 const controls = useControlsStore()
 const displaysStore = useDisplaysStore()
 const { state, busy, error: controlError } = storeToRefs(controls)
 const { displays, loading, error: displayError } = storeToRefs(displaysStore)
-const tab = shallowRef<Tab>('info')
-const settingsOpen = shallowRef(false)
-const selectedId = shallowRef('')
+const lastTab = shallowRef<TrayTab>('info')
 const now = shallowRef(Date.now())
 let clock: ReturnType<typeof setInterval> | undefined
 
 provideHardwareSliderDraft()
 
+const settingsOpen = computed(() => route.name === 'settings')
+const selectedId = shallowRef('')
 const selected = computed(
   () =>
     state.value?.devices.find((device) => device.id === selectedId.value) ??
     state.value?.devices[0],
 )
-const deviceChoices = computed(() =>
-  (state.value?.devices.length ?? 0) > 1 ? state.value!.devices : [],
-)
+const devices = computed(() => state.value?.devices ?? [])
+const deviceChoices = computed(() => (devices.value.length > 1 ? devices.value : []))
 const capabilities = computed(() => state.value?.capabilities[selected.value?.id ?? ''] ?? {})
 const locked = computed(() => busy.value || !!state.value?.pending)
+const display = computed(() => displays.value[0])
+const settings = computed(() => state.value?.settings)
+const launchAtLoginAvailable = computed(() => state.value?.launchAtLoginAvailable ?? false)
+const screenFilter = computed(() => state.value?.screenFilter)
 const title = computed(() =>
   selected.value
     ? state.value?.settings.aliases[selected.value.id] || selected.value.name
@@ -69,18 +64,46 @@ const countdown = computed(() =>
 )
 const themePreference = computed(() => state.value?.settings.theme ?? 'system')
 
+provideTraySession({
+  selected,
+  devices,
+  capabilities,
+  locked,
+  display,
+  scaleText,
+  settings,
+  launchAtLoginAvailable,
+  screenFilter,
+})
 useAppearanceTheme(themePreference)
 
 function refreshAll(): void {
   void controls.execute({ type: 'refresh' })
   void displaysStore.refresh()
 }
+function openTab(name: TrayTab): void {
+  if (route.name !== name) void router.push({ name })
+}
+function closeSettings(): void {
+  void router.replace({ name: lastTab.value })
+}
+function toggleSettings(): void {
+  if (settingsOpen.value) closeSettings()
+  else void router.replace({ name: 'settings' })
+}
 
 watch(
+  () => route.name,
+  (name) => {
+    if (trayTabs.some((item) => item.name === name)) lastTab.value = name as TrayTab
+  },
+  { immediate: true },
+)
+watch(
   () => state.value?.devices,
-  (devices) => {
-    if (!devices?.some((device) => device.id === selectedId.value))
-      selectedId.value = devices?.find((device) => device.primary)?.id ?? devices?.[0]?.id ?? ''
+  (next) => {
+    if (!next?.some((device) => device.id === selectedId.value))
+      selectedId.value = next?.find((device) => device.primary)?.id ?? next?.[0]?.id ?? ''
   },
   { immediate: true },
 )
@@ -123,7 +146,7 @@ onUnmounted(() => {
         :aria-label="settingsOpen ? '返回显示器控制' : '打开设置'"
         :title="settingsOpen ? '返回显示器控制' : '打开设置'"
         :aria-pressed="settingsOpen"
-        @click="settingsOpen = !settingsOpen"
+        @click="toggleSettings"
       >
         <PanelIcon name="settings" :size="20" />
       </button>
@@ -141,18 +164,18 @@ onUnmounted(() => {
       class="tab-bar"
       role="tablist"
       aria-label="显示器控制页面"
-      :data-active="tab"
+      :data-active="route.name"
     >
       <button
-        v-for="item in tabs"
-        :key="item.id"
+        v-for="item in trayTabs"
+        :key="item.name"
         class="tab-item"
         role="tab"
-        :aria-selected="tab === item.id"
+        :aria-selected="route.name === item.name"
         :aria-label="item.label"
         :title="item.label"
-        :class="{ active: tab === item.id }"
-        @click="tab = item.id"
+        :class="{ active: route.name === item.name }"
+        @click="openTab(item.name)"
       >
         <PanelIcon :name="item.icon" :size="21" />
       </button>
@@ -162,19 +185,14 @@ onUnmounted(() => {
         class="settings-back"
         aria-label="返回显示器控制"
         title="返回显示器控制"
-        @click="settingsOpen = false"
+        @click="closeSettings"
       >
         <PanelIcon name="chevron-left" :size="19" />
       </button>
       <strong>应用设置</strong>
     </div>
     <div class="page-content">
-      <AppSettingsPage
-        v-if="settingsOpen"
-        :settings="state?.settings"
-        :available="state?.launchAtLoginAvailable ?? false"
-        :locked="locked"
-      />
+      <RouterView v-if="settingsOpen" />
       <div v-else-if="!selected && !displays.length" class="empty-state">
         <PanelIcon name="monitor" :size="42" />
         <h2 class="empty-title">等待显示器信息</h2>
@@ -183,31 +201,11 @@ onUnmounted(() => {
         </p>
         <button class="primary-action" :disabled="busy" @click="refreshAll">重新检测</button>
       </div>
-      <KeepAlive v-else :max="4">
-        <ScreenInfoPage
-          v-if="tab === 'info'"
-          :selected="selected"
-          :display="displays[0]"
-          :capabilities="capabilities"
-          :locked="locked"
-        />
-        <PictureSettingsPage
-          v-else-if="tab === 'picture'"
-          :selected="selected"
-          :devices="state?.devices ?? []"
-          :capabilities="capabilities"
-          :locked="locked"
-        />
-        <DisplayModesPage
-          v-else-if="tab === 'modes'"
-          :selected="selected"
-          :devices="state?.devices ?? []"
-          :display="displays[0]"
-          :scale-text="scaleText"
-          :locked="locked"
-        />
-        <ScreenFiltersPage v-else :state="state?.screenFilter" :locked="locked" />
-      </KeepAlive>
+      <RouterView v-else v-slot="{ Component }">
+        <KeepAlive :max="4">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
     </div>
     <div v-if="statusError" class="status-error" role="alert" :title="statusError">
       {{ statusError }}

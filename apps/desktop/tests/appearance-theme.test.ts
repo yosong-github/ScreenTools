@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveAppearanceTheme } from '../src/renderer/src/theme/useAppearanceTheme'
+import { resolveAppearanceTheme } from '../src/renderer/src/composables/useAppearanceTheme'
 
 describe('面板主题', () => {
   it('跟随系统时使用实时系统配色', () => {

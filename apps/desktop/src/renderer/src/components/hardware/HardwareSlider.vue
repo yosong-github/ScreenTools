@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { HardwareValue } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
-import PanelIcon from '../PanelIcon.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
 import { useSharedHardwareSliderDraft } from './hardware-slider-context'
 import type { SliderFeature } from './useHardwareSliderDraft'
 

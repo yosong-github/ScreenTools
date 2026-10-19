@@ -3,7 +3,7 @@ import {
   sceneHardwareSettings,
   sceneMatches,
   scenePresets,
-} from '../src/renderer/src/components/tray/scenes/scene-presets'
+} from '../src/renderer/src/views/picture/scene-presets'
 
 const [day, reading, movie, night] = scenePresets
 

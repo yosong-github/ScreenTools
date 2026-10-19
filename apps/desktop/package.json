@@ -25,7 +25,8 @@
     "@screentools/display-native": "workspace:*",
     "koffi": "3.3.3",
     "pinia": "4.1.0",
-    "vue": "3.5.44"
+    "vue": "3.5.44",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@types/node": "26.6.5",

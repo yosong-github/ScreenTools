@@ -1,28 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DisplayDevice, HardwareCapabilities, NativeDisplay } from '@screentools/contracts'
+import HardwareSlider from '@renderer/components/hardware/HardwareSlider.vue'
+import { useTraySession } from '@renderer/composables/useTraySession'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
-import InputSourceCard from '../input-source/InputSourceCard.vue'
-import HardwareSlider from '../hardware/HardwareSlider.vue'
+import InputSourceCard from './InputSourceCard.vue'
 
-defineOptions({ name: 'ScreenInfoPage' })
+defineOptions({ name: 'ScreenInfoView' })
 
-const props = defineProps<{
-  selected: NativeDisplay | undefined
-  display: DisplayDevice | undefined
-  capabilities: HardwareCapabilities
-  locked: boolean
-}>()
-
+const { selected, display, capabilities, locked } = useTraySession()
 const sizeText = computed(() =>
-  props.selected
-    ? formatPixelSize(props.selected.mode.width, props.selected.mode.height)
-    : props.display
-      ? formatPixelSize(props.display.pixelSize.width, props.display.pixelSize.height)
+  selected.value
+    ? formatPixelSize(selected.value.mode.width, selected.value.mode.height)
+    : display.value
+      ? formatPixelSize(display.value.pixelSize.width, display.value.pixelSize.height)
       : '—',
 )
 const currentRate = computed(
-  () => props.selected?.mode.refreshRate ?? props.display?.refreshRate ?? null,
+  () => selected.value?.mode.refreshRate ?? display.value?.refreshRate ?? null,
 )
 </script>
 

@@ -3,7 +3,7 @@ import { computed, onDeactivated, onMounted, onUnmounted, shallowRef, watch } fr
 import type { HardwareValue } from '@screentools/contracts'
 import { screenTools } from '@renderer/api/screen-tools'
 import { useControlsStore } from '@renderer/stores/controls'
-import PanelIcon from '../PanelIcon.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
 
 const props = defineProps<{
   deviceId: string | undefined

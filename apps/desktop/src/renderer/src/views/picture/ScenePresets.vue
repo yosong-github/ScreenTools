@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { HardwareCapabilities } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
-import PanelIcon from '../PanelIcon.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
 import {
   sceneHardwareSettings,
   sceneMatches,

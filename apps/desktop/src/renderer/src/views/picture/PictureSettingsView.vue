@@ -1,20 +1,15 @@
 <script setup lang="ts">
-import type { ChangePlan, HardwareCapabilities, NativeDisplay } from '@screentools/contracts'
+import type { ChangePlan } from '@screentools/contracts'
+import HardwareSlider from '@renderer/components/hardware/HardwareSlider.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
+import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
 import { snapshotSettings } from '@renderer/utils/display-settings'
-import HardwareSlider from '../hardware/HardwareSlider.vue'
-import PanelIcon from '../PanelIcon.vue'
-import ScenePresets from '../scenes/ScenePresets.vue'
+import ScenePresets from './ScenePresets.vue'
 
-defineOptions({ name: 'PictureSettingsPage' })
+defineOptions({ name: 'PictureSettingsView' })
 
-const props = defineProps<{
-  selected: NativeDisplay | undefined
-  devices: NativeDisplay[]
-  capabilities: HardwareCapabilities
-  locked: boolean
-}>()
-
+const { selected, devices, capabilities, locked } = useTraySession()
 const controls = useControlsStore()
 const topologies = {
   extend: '扩展',
@@ -27,9 +22,9 @@ function applyTopology(topology: NonNullable<ChangePlan['topology']>): void {
   void controls.execute({ type: 'apply', plan: { topology, displays: [], hardware: [] } })
 }
 function hdrChange(event: Event): void {
-  if (props.locked) return
-  const changes = snapshotSettings(props.devices)
-  const target = changes.find((device) => device.id === props.selected?.id)
+  if (locked.value) return
+  const changes = snapshotSettings(devices.value)
+  const target = changes.find((device) => device.id === selected.value?.id)
   if (!target) return
   target.hdrEnabled = (event.target as HTMLInputElement).checked
   void controls.execute({ type: 'apply', plan: { displays: changes, hardware: [] } })

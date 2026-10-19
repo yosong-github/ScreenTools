@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import type { AppSettings } from '@screentools/contracts'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
+import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
-import PanelIcon from '../PanelIcon.vue'
 
-defineOptions({ name: 'AppSettingsPage' })
+defineOptions({ name: 'AppSettingsView' })
 
-const props = defineProps<{
-  settings: AppSettings | undefined
-  available: boolean
-  locked: boolean
-}>()
-
+const { settings, launchAtLoginAvailable: available, locked } = useTraySession()
 const controls = useControlsStore()
 const themeOptions = [
   { value: 'system', label: '跟随系统', icon: 'monitor' },
@@ -19,19 +15,19 @@ const themeOptions = [
 ] as const
 
 function changeLaunchAtLogin(event: Event): void {
-  if (!props.settings || !props.available || props.locked) return
+  if (!settings.value || !available.value || locked.value) return
   const launchAtLogin = (event.target as HTMLInputElement).checked
   void controls.execute({
     type: 'settings',
-    settings: { ...props.settings, launchAtLogin },
+    settings: { ...settings.value, launchAtLogin },
   })
 }
 
 function changeTheme(theme: AppSettings['theme']): void {
-  if (!props.settings || props.locked || props.settings.theme === theme) return
+  if (!settings.value || locked.value || settings.value.theme === theme) return
   void controls.execute({
     type: 'settings',
-    settings: { ...props.settings, theme },
+    settings: { ...settings.value, theme },
   })
 }
 </script>

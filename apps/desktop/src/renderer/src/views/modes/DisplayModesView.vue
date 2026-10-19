@@ -1,48 +1,42 @@
 <script setup lang="ts">
 import { computed, shallowRef, watch } from 'vue'
-import type { DisplayDevice, DisplayMode, NativeDisplay } from '@screentools/contracts'
+import type { DisplayMode } from '@screentools/contracts'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
+import { useTraySession } from '@renderer/composables/useTraySession'
 import { useControlsStore } from '@renderer/stores/controls'
 import { formatPixelSize, formatRefreshRate } from '@renderer/utils/display-format'
 import { snapshotSettings } from '@renderer/utils/display-settings'
-import PanelIcon from '../PanelIcon.vue'
 
-defineOptions({ name: 'DisplayModesPage' })
+defineOptions({ name: 'DisplayModesView' })
 
 type Resolution = { width: number; height: number }
-const props = defineProps<{
-  selected: NativeDisplay | undefined
-  devices: NativeDisplay[]
-  display: DisplayDevice | undefined
-  scaleText: string
-  locked: boolean
-}>()
-
+const { selected, devices, display, scaleText, locked } = useTraySession()
 const controls = useControlsStore()
 const refreshPage = shallowRef(0)
 const sizeText = computed(() =>
-  props.selected
-    ? formatPixelSize(props.selected.mode.width, props.selected.mode.height)
-    : props.display
-      ? formatPixelSize(props.display.pixelSize.width, props.display.pixelSize.height)
+  selected.value
+    ? formatPixelSize(selected.value.mode.width, selected.value.mode.height)
+    : display.value
+      ? formatPixelSize(display.value.pixelSize.width, display.value.pixelSize.height)
       : '—',
 )
 const currentRate = computed(
-  () => props.selected?.mode.refreshRate ?? props.display?.refreshRate ?? null,
+  () => selected.value?.mode.refreshRate ?? display.value?.refreshRate ?? null,
 )
 const resolutions = computed<Resolution[]>(() => {
   const items = new Map<string, Resolution>()
-  for (const mode of props.selected?.modes ?? [])
+  for (const mode of selected.value?.modes ?? [])
     items.set(`${mode.width}x${mode.height}`, { width: mode.width, height: mode.height })
   return [...items.values()].sort(
     (a, b) => b.width * b.height - a.width * a.height || b.width - a.width,
   )
 })
 const refreshRates = computed(() => {
-  const current = props.selected?.mode
+  const current = selected.value?.mode
   if (!current) return []
   return [
     ...new Set(
-      props.selected?.modes
+      selected.value?.modes
         .filter((mode) => mode.width === current.width && mode.height === current.height)
         .map((mode) => Number(mode.refreshRate.toFixed(2))) ?? [],
     ),
@@ -54,16 +48,16 @@ const shownRates = computed(() =>
 )
 
 function applyMode(mode: DisplayMode): void {
-  if (props.locked) return
-  const changes = snapshotSettings(props.devices)
-  const target = changes.find((device) => device.id === props.selected?.id)
+  if (locked.value) return
+  const changes = snapshotSettings(devices.value)
+  const target = changes.find((device) => device.id === selected.value?.id)
   if (!target) return
   target.mode = { ...mode }
   void controls.execute({ type: 'apply', plan: { displays: changes, hardware: [] } })
 }
 function applyRate(rate: number): void {
-  const current = props.selected?.mode
-  const mode = props.selected?.modes.find(
+  const current = selected.value?.mode
+  const mode = selected.value?.modes.find(
     (candidate) =>
       candidate.width === current?.width &&
       candidate.height === current.height &&
@@ -72,10 +66,10 @@ function applyRate(rate: number): void {
   if (mode) applyMode(mode)
 }
 function applyResolution(resolution: Resolution): void {
-  const options = props.selected?.modes.filter(
+  const options = selected.value?.modes.filter(
     (mode) => mode.width === resolution.width && mode.height === resolution.height,
   )
-  const current = props.selected?.mode.refreshRate ?? 60
+  const current = selected.value?.mode.refreshRate ?? 60
   const mode = options?.sort(
     (a, b) =>
       Math.abs(a.refreshRate - current) - Math.abs(b.refreshRate - current) ||
@@ -85,7 +79,7 @@ function applyResolution(resolution: Resolution): void {
 }
 
 watch(
-  () => props.selected?.id,
+  () => selected.value?.id,
   () => {
     refreshPage.value = 0
   },

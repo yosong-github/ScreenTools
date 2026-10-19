@@ -2,7 +2,7 @@
 import { computed, shallowRef, watch } from 'vue'
 import type { ScreenFilterId, ScreenFilterState } from '@screentools/contracts'
 import { useControlsStore } from '@renderer/stores/controls'
-import PanelIcon from '../PanelIcon.vue'
+import PanelIcon from '@renderer/components/PanelIcon.vue'
 import FilterPreview from './FilterPreview.vue'
 
 const props = defineProps<{
