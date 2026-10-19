@@ -11,6 +11,7 @@ export default defineConfig({
         exclude: [
           '@screentools/contracts',
           '@screentools/display-control',
+          '@screentools/display-core',
           '@screentools/display-native',
         ],
       },
