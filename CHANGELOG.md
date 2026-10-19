@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/yosong-github/ScreenTools/compare/v0.3.0...v0.4.0) (2026-10-19)
+
+
+### Features
+
+* **desktop:** download updates before install confirmation ([5cf35ba](https://github.com/yosong-github/ScreenTools/commit/5cf35ba75d27568b1e383a1d9ddee860a95804e9))
+
+
+### Bug Fixes
+
+* **desktop:** restore selected screen filter on launch ([01327a3](https://github.com/yosong-github/ScreenTools/commit/01327a3774f079992629d89c7dba3a5145de06f9))
+
 ## [0.3.0](https://github.com/yosong-github/ScreenTools/compare/v0.2.1...v0.3.0) (2026-10-19)
 
 
