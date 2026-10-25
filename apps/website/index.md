@@ -32,13 +32,18 @@ features:
     details: 按显示器支持的模式切换刷新率与分辨率，重要显示配置提供限时确认。
     link: /features#刷新率与清晰度
     linkText: 查看界面
+  - icon: 🌓
+    title: 屏幕滤镜
+    details: 阅读、夜间、灰度和 FPS 预设，或自定义颜色。立即作用到所有显示器，退出后恢复。
+    link: /features#屏幕滤镜
+    linkText: 查看说明
 ---
 
 <section class="home-showcase" aria-labelledby="showcase-title">
   <div class="showcase-heading">
-    <span class="eyebrow">THREE VIEWS · ONE TRAY PANEL</span>
+    <span class="eyebrow">IN THE TRAY</span>
     <h2 id="showcase-title">常用操作，打开托盘就能完成</h2>
-    <p>没有常驻主窗口，三个页面覆盖查看、配置与模式切换。</p>
+    <p>没有常驻主窗口。查看、配置和模式切换都在托盘里，屏幕滤镜是第四个页面。</p>
   </div>
   <div class="showcase-grid">
     <a class="showcase-card" href="./features.html#屏幕信息">
@@ -69,4 +74,16 @@ features:
       </div>
     </a>
   </div>
+</section>
+
+<section class="home-filter" aria-labelledby="filter-title">
+  <div class="filter-copy">
+    <span class="eyebrow">SCREEN FILTER</span>
+    <h2 id="filter-title">给整个桌面套上颜色</h2>
+    <p>
+      在第四个页面切换阅读、夜间、灰度或 FPS 预设。颜色马上作用到所有显示器，不用等待 20 秒确认。退出应用后桌面回到原来的颜色；下次打开时，如果系统仍允许，会自动用回上次的选择。
+    </p>
+    <a class="filter-link" href="./guide/screen-filter.html">查看设置说明</a>
+  </div>
+  <FilterPlayground compact />
 </section>

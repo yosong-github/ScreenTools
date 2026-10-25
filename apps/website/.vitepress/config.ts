@@ -10,7 +10,7 @@ export default defineConfig({
   appearance: 'dark',
   head: [
     ['link', { rel: 'icon', href: `${base}logo.svg`, type: 'image/svg+xml' }],
-    ['meta', { name: 'theme-color', content: '#101112' }],
+    ['meta', { name: 'theme-color', content: '#100e0c' }],
   ],
   themeConfig: {
     logo: '/logo.svg',
@@ -19,6 +19,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '功能预览', link: '/features' },
       { text: '快速开始', link: '/guide/getting-started' },
+      { text: '屏幕滤镜', link: '/guide/screen-filter' },
       { text: '下载', link: 'https://github.com/yosong-github/ScreenTools/releases/latest' },
       { text: 'GitHub', link: 'https://github.com/yosong-github/ScreenTools' },
     ],
@@ -26,7 +27,10 @@ export default defineConfig({
       '/guide/': [
         {
           text: '使用指南',
-          items: [{ text: '快速开始', link: '/guide/getting-started' }],
+          items: [
+            { text: '快速开始', link: '/guide/getting-started' },
+            { text: '屏幕滤镜', link: '/guide/screen-filter' },
+          ],
         },
       ],
     },
