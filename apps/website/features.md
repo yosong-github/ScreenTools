@@ -1,11 +1,13 @@
 ---
 title: 功能预览
-description: 了解 ScreenTools 的屏幕信息、画面配置和显示模式切换。
+description: 了解 ScreenTools 的屏幕信息、画面配置、显示模式和屏幕滤镜。
 ---
 
-# 三个页面，管好你的显示器
+<p class="st-kicker"><span>01</span> / 功能预览</p>
 
-ScreenTools 启动后常驻托盘。点击图标展开面板，在三个页面之间切换；无需打开独立主窗口。下面的截图来自当前桌面应用。
+# 四个页面，管好你的显示器
+
+ScreenTools 启动后常驻托盘。点击图标展开面板，在四个页面之间切换；无需打开独立主窗口。下面的截图来自当前桌面应用。
 
 ## 屏幕信息
 
@@ -27,8 +29,18 @@ ScreenTools 启动后常驻托盘。点击图标展开面板，在三个页面�
 
 <img class="feature-shot" src="/images/display-modes.png" alt="刷新率与清晰度页面：刷新率选项与可滚动的分辨率列表" />
 
+## 屏幕滤镜
+
+第四个托盘页面。标题是「ICC 屏幕滤镜」，并标明效果作用于「所有显示器」。它用 Windows 全屏颜色矩阵改变整个桌面的颜色，不安装 ICC 描述文件，也不改写显示器硬件参数。
+
+预设分「日常」和「FPS 游戏」。悬停或键盘聚焦时只更新预览，点击后立即生效，不进入 20 秒确认。自定义滤镜可以调节亮度、对比度、色温、黑位、红绿蓝和饱和度；保存方案后，再从「我的滤镜」点选，才会应用到桌面。正常退出应用后，颜色会恢复。
+
+和「画面配置」里的日间、阅读、观影、夜间不是同一件事：那些场景写入硬件亮度与对比度；滤镜页的阅读、夜间是颜色矩阵。
+
+[查看如何设置屏幕滤镜 →](/guide/screen-filters)
+
 ## 本地优先
 
 显示配置通过 Windows 本机接口处理，显示器硬件参数通过 DDC/CI 读取与写入，不依赖云服务。不同显示器对亮度、音量、输入源等命令的支持情况可能不同。
 
-[下载 Windows 安装包](https://github.com/yosong-github/ScreenTools/releases/latest) · [查看快速开始 →](/guide/getting-started)
+[下载 Windows 安装包](https://github.com/yosong-github/ScreenTools/releases/latest) · [设置屏幕滤镜 →](/guide/screen-filters) · [查看快速开始 →](/guide/getting-started)
