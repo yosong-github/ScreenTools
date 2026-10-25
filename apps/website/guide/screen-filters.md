@@ -7,7 +7,7 @@ description: 在 ScreenTools 托盘面板里启用、预览和自定义全屏屏
 
 # 设置屏幕滤镜
 
-屏幕滤镜是托盘面板的第四个页面。页面标题写着「ICC 屏幕滤镜」，右侧标明「所有显示器」。
+屏幕滤镜是托盘面板的第四个页面。底部标签的名称是「屏幕滤镜」；页内标题写着「ICC 屏幕滤镜」，右侧标明「所有显示器」。
 
 它通过 Windows Magnification API 的 `MagSetFullscreenColorEffect`，给整个桌面套上一张 5×5 颜色矩阵。这不是安装 ICC 描述文件，也不写入显示器的硬件亮度、对比度或色温。不需要管理员权限，也不必先打开 DDC/CI。
 
@@ -29,7 +29,7 @@ import FilterSwatches from '../.vitepress/theme/components/FilterSwatches.vue'
   <li>
     <span>02</span>
     <strong>切到「屏幕滤镜」</strong>
-    <p>面板有四个页面：屏幕信息、画面配置、刷新率与清晰度、屏幕滤镜。滤镜页顶部可以在「预设滤镜」和「自定义滤镜」之间切换。</p>
+    <p>底部四个图标页的名称是屏幕信息、画面配置、刷新率与清晰度、屏幕滤镜。滤镜页顶部可以在「预设滤镜」和「自定义滤镜」之间切换。</p>
   </li>
   <li>
     <span>03</span>
@@ -44,6 +44,8 @@ import FilterSwatches from '../.vitepress/theme/components/FilterSwatches.vue'
 </ol>
 
 卡片底部的说明是：「作用于所有显示器，退出 ScreenTools 后恢复」。Windows 这一接口不能只处理其中一台显示器，同一时间也只能有一个滤镜。
+
+<img class="feature-shot" src="/images/filter-presets.png" alt="预设滤镜页：日常、FPS 游戏和实时预览分界" />
 
 ## 预设滤镜
 
@@ -68,7 +70,9 @@ import FilterSwatches from '../.vitepress/theme/components/FilterSwatches.vue'
 
 ## 自定义滤镜
 
-切到「自定义滤镜」。滑块只更新预览，不会立刻改桌面。说明文字是：「拖动滑块可立即预览；保存方案后可应用到所有显示器。」
+切到「自定义滤镜」。上方是「我的滤镜」，滑块只更新预览，不会立刻改桌面。说明文字是：「拖动滑块可立即预览；保存方案后可应用到所有显示器。」
+
+<img class="feature-shot" src="/images/filter-custom.png" alt="自定义滤镜页：我的滤镜、实时预览和参数滑块" />
 
 | 参数               | 范围            | 步进 | 默认  |
 | ------------------ | --------------- | ---- | ----- |

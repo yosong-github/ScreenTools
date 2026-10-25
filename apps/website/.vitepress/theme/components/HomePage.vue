@@ -6,33 +6,60 @@ import { downloadUrl, sitePath } from '../links'
 
 const wordmark = 'SCREENTOOLS'.split('')
 
-const panels = [
+const tour = [
   {
     index: '01',
     kicker: '屏幕信息',
-    title: '设备概览、输入源、亮度与音量',
-    body: '当前分辨率、刷新率、连接方式和输入源，一眼可见；按设备能力调节亮度与音量。',
+    title: '分辨率、输入源、亮度与音量',
+    body: '预览写出当前分辨率和刷新率。输入源默认只展示，打开「允许切换」并确认后才能改。亮度和显示器音量走 DDC/CI。',
     image: '/images/screen-info.png',
-    alt: 'ScreenTools 屏幕信息页面截图',
+    alt: '屏幕信息页：分辨率预览、输入源、亮度和显示器音量',
     href: '/features#屏幕信息',
   },
   {
     index: '02',
     kicker: '画面配置',
-    title: '显示拓扑、场景与硬件参数',
-    body: '扩展、复制与单屏模式；日间、阅读、观影、夜间场景，以及硬件亮度、对比度和 HDR。',
+    title: '拓扑、场景和硬件参数',
+    body: '页内标题是「画面与配置」。扩展、复制、仅主屏、仅外屏需要 20 秒确认。场景、硬件亮度、对比度，以及支持时的 HDR，都在这一页。',
     image: '/images/picture-settings.png',
-    alt: 'ScreenTools 画面配置页面截图',
+    alt: '画面配置页：显示拓扑、场景、硬件亮度和 HDR',
     href: '/features#画面配置',
   },
   {
     index: '03',
     kicker: '刷新率与清晰度',
-    title: '按设备支持的模式切换',
-    body: '按显示器支持的模式切换刷新率与分辨率，重要显示配置提供限时确认。',
+    title: '只列出设备上报的模式',
+    body: '页内标题是「分辨率与刷新率」。刷新率是一组选项，分辨率是可滚动列表。系统缩放仍由 Windows 管理。',
     image: '/images/display-modes.png',
-    alt: 'ScreenTools 刷新率与清晰度页面截图',
+    alt: '刷新率与清晰度页：刷新率选项和分辨率列表',
     href: '/features#刷新率与清晰度',
+  },
+  {
+    index: '04',
+    kicker: '屏幕滤镜 · 预设',
+    title: '日常和 FPS，先预览再点击',
+    body: '页内标题是「ICC 屏幕滤镜」。日常有原色、阅读、夜间、灰度；FPS 游戏有竞技、鲜艳、暗场、专注。分界线左右是原色和当前方案。',
+    image: '/images/filter-presets.png',
+    alt: '屏幕滤镜预设：日常与 FPS 分组，以及实时预览分界',
+    href: '/features#屏幕滤镜',
+  },
+  {
+    index: '04',
+    kicker: '屏幕滤镜 · 自定义',
+    title: '滑块预览，保存后才能套用',
+    body: '「我的滤镜」里点击已保存的方案，才会作用到所有显示器。亮度、对比度、色温等滑块只更新预览。',
+    image: '/images/filter-custom.png',
+    alt: '自定义滤镜：已保存方案、实时预览和参数滑块',
+    href: '/features#自定义滤镜',
+  },
+  {
+    index: '05',
+    kicker: '应用设置',
+    title: '主题、自启动和版本',
+    body: '齿轮进入，不是第五个标签。主题只改面板。开机自启动仅安装版可用。版本更新检查 GitHub Release，确认后才安装。',
+    image: '/images/app-settings.png',
+    alt: '应用设置：主题、开机自启动和版本更新',
+    href: '/features#应用设置',
   },
 ]
 
@@ -74,7 +101,7 @@ const marquee = [
   '画面配置',
   '刷新率与清晰度',
   '屏幕滤镜',
-  '显示方案',
+  '应用设置',
   'DDC/CI',
   'Win32 CCD',
   '本机运行',
@@ -96,23 +123,32 @@ const marquee = [
             >{{ letter }}</span
           >
         </p>
-        <div class="st-hero-copy">
-          <h1 id="hero-title">你的显示器，<em>一眼掌握。</em></h1>
-          <p class="st-lede">
-            在 Windows
-            托盘里快速查看显示状态，调整画面与硬件参数，切换刷新率和分辨率。所有控制都留在本机。
-          </p>
-          <div class="st-actions">
-            <a class="st-btn st-btn-solid" :href="downloadUrl" target="_blank" rel="noreferrer">
-              下载 Windows 版
-            </a>
-            <a class="st-btn" :href="sitePath('/features')">了解功能</a>
+        <div class="st-hero-stage">
+          <div class="st-hero-copy">
+            <h1 id="hero-title">你的显示器，<em>一眼掌握。</em></h1>
+            <p class="st-lede">
+              在 Windows
+              托盘里查看分辨率和输入源，调整画面与硬件参数，切换刷新率，或给整个桌面套上屏幕滤镜。控制留在本机。
+            </p>
+            <div class="st-actions">
+              <a class="st-btn st-btn-solid" :href="downloadUrl" target="_blank" rel="noreferrer">
+                下载 Windows 版
+              </a>
+              <a class="st-btn" :href="sitePath('/features')">了解功能</a>
+            </div>
+            <p class="st-hero-meta">
+              <span>Windows x64</span>
+              <span>四个托盘页</span>
+              <span>控制留在本机</span>
+            </p>
           </div>
-          <p class="st-hero-meta">
-            <span>Windows x64</span>
-            <span>托盘面板</span>
-            <span>控制留在本机</span>
-          </p>
+          <figure class="st-shot st-hero-panel">
+            <img
+              :src="withBase('/images/filter-presets.png')"
+              alt="托盘里的屏幕滤镜预设页，含日常、FPS 分组和实时预览"
+            />
+            <figcaption class="st-hud"><span>04</span> / 屏幕滤镜</figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -132,53 +168,29 @@ const marquee = [
         <span class="st-tick st-tick-right" aria-hidden="true"></span>
         <div class="st-section-bar">
           <p class="st-hud"><span>01</span> / 界面</p>
-          <p class="st-hud st-hide-sm">四个页面，都在托盘里</p>
+          <p class="st-hud st-hide-sm">四个图标页，外加设置</p>
         </div>
         <div class="st-section-intro">
-          <h2 id="panels-title">常用操作，打开<em>托盘</em>就能完成。</h2>
-          <p>没有常驻主窗口。查看、配置、切换模式，以及屏幕滤镜，都从同一个面板进入。</p>
+          <h2 id="panels-title">打开托盘，<em>按页</em>往下看。</h2>
+          <p>底部是四个图标页。齿轮打开应用设置，不是第五个标签。截图来自当前桌面面板。</p>
         </div>
-        <div class="st-cards">
+        <div class="st-tour">
           <a
-            v-for="panel in panels"
-            :key="panel.index"
-            class="st-card"
-            :href="sitePath(panel.href)"
+            v-for="item in tour"
+            :key="item.kicker"
+            class="st-tour-item"
+            :href="sitePath(item.href)"
           >
-            <div class="st-card-bar">
-              <p class="st-hud">{{ panel.kicker }}</p>
-              <p class="st-hud">{{ panel.index }}</p>
+            <div class="st-tour-copy">
+              <p class="st-hud">
+                <span>{{ item.index }}</span> / {{ item.kicker }}
+              </p>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.body }}</p>
             </div>
-            <div class="st-card-media">
-              <img :src="withBase(panel.image)" :alt="panel.alt" />
-            </div>
-            <div class="st-card-copy">
-              <h3>{{ panel.title }}</h3>
-              <p>{{ panel.body }}</p>
-            </div>
-          </a>
-          <a class="st-card" :href="sitePath('/guide/screen-filters')">
-            <div class="st-card-bar">
-              <p class="st-hud">屏幕滤镜</p>
-              <p class="st-hud">04</p>
-            </div>
-            <div class="st-card-spec">
-              <p>所有显示器</p>
-              <ul>
-                <li>原色</li>
-                <li>阅读</li>
-                <li>夜间</li>
-                <li>灰度</li>
-                <li>FPS 竞技</li>
-                <li>FPS 鲜艳</li>
-                <li>FPS 暗场</li>
-                <li>FPS 专注</li>
-              </ul>
-            </div>
-            <div class="st-card-copy">
-              <h3>点一下，整个桌面换颜色</h3>
-              <p>预设和自定义滤镜立即生效，不进入 20 秒确认。退出应用后恢复原来的颜色。</p>
-            </div>
+            <figure class="st-shot">
+              <img :src="withBase(item.image)" :alt="item.alt" />
+            </figure>
           </a>
         </div>
       </div>
@@ -303,9 +315,16 @@ const marquee = [
   animation: st-letter-in 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.st-hero-stage {
+  display: grid;
+  gap: 36px;
+  align-items: center;
+  margin-top: 36px;
+}
+
 .st-hero-copy {
   max-width: 640px;
-  margin: 28px auto 0;
+  margin: 0 auto;
   text-align: center;
 }
 
@@ -522,7 +541,6 @@ const marquee = [
   margin: 18px 0 0;
 }
 
-.st-cards,
 .st-facts,
 .st-home-steps {
   display: grid;
@@ -531,113 +549,70 @@ const marquee = [
   border-top: 1px solid var(--line);
 }
 
-.st-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  color: inherit;
-  text-decoration: none;
-}
-
-.st-card-bar,
-.st-card-copy,
 .st-facts article,
 .st-home-steps li {
   background: var(--bg);
 }
 
-.st-card-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--line);
+.st-tour {
+  border-top: 1px solid var(--line);
 }
 
-.st-card-media,
-.st-card-spec {
-  display: flex;
-  min-height: 420px;
-  align-items: flex-end;
-  justify-content: center;
-  background: var(--bg-sunken);
-}
-
-.st-card-media {
-  overflow: hidden;
-  padding: 28px 20px 0;
-}
-
-.st-card-media img {
-  width: min(300px, 78%);
-  height: auto;
-  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.st-card:hover img {
-  transform: translateY(-8px);
-}
-
-.st-card-spec {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 28px;
-}
-
-.st-card-spec p,
-.st-card-spec li {
-  font-family: var(--font-mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.st-card-spec p {
-  margin: 0 0 18px;
-  color: var(--faint);
-  font-size: 11px;
-}
-
-.st-card-spec ul {
+.st-tour-item {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: 22px;
+  padding: 36px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
 }
 
-.st-card-spec li {
-  color: var(--ink);
-  font-size: 13px;
-}
-
-.st-card-spec li::before {
-  margin-right: 8px;
-  color: var(--accent-ink);
-  content: '▪';
-}
-
-.st-card-copy {
-  padding: 22px 22px 28px;
-}
-
-.st-card-copy h3,
+.st-tour-copy h3,
 .st-facts h3 {
-  margin: 0;
+  margin: 12px 0 0;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
-.st-card-copy p,
+.st-tour-copy p,
 .st-facts article p,
 .st-home-steps p {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: var(--muted);
   line-height: 1.7;
+}
+
+.st-shot {
+  margin: 0;
+  padding: 16px 16px 0;
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+
+.st-shot img {
+  display: block;
+  width: min(100%, 280px);
+  height: auto;
+  margin: 0 auto;
+}
+
+.st-shot figcaption {
+  margin: 12px -16px 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.st-hero-panel {
+  width: min(300px, 100%);
+  margin: 0 auto;
+}
+
+.st-hero-panel figcaption {
+  text-align: center;
 }
 
 .st-home-steps {
@@ -750,9 +725,32 @@ const marquee = [
   }
 }
 
-@media (min-width: 980px) {
-  .st-cards {
-    grid-template-columns: 1fr 1fr;
+@media (min-width: 960px) {
+  .st-hero-stage {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 56px;
+    margin-top: 48px;
+  }
+
+  .st-hero-copy,
+  .st-hero-copy .st-actions,
+  .st-hero-copy .st-hero-meta,
+  .st-hero-panel figcaption {
+    margin-right: 0;
+    margin-left: 0;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  .st-tour-item {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 48px;
+    align-items: center;
+    padding: 48px 40px;
+  }
+
+  .st-tour-item:nth-child(even) .st-shot {
+    order: -1;
   }
 }
 
@@ -764,17 +762,11 @@ const marquee = [
   .st-hide-sm {
     display: none;
   }
-
-  .st-card-media,
-  .st-card-spec {
-    min-height: 320px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .st-letter,
-  .st-marquee-track,
-  .st-card-media img {
+  .st-marquee-track {
     animation: none;
     transition: none;
   }

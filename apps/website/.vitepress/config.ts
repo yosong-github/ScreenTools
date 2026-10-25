@@ -50,6 +50,8 @@ export default defineConfig({
             { text: '画面配置', link: '/features#画面配置' },
             { text: '刷新率与清晰度', link: '/features#刷新率与清晰度' },
             { text: '屏幕滤镜', link: '/features#屏幕滤镜' },
+            { text: '自定义滤镜', link: '/features#自定义滤镜' },
+            { text: '应用设置', link: '/features#应用设置' },
           ],
         },
       ],
