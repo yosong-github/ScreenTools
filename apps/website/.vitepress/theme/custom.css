@@ -317,6 +317,12 @@ body {
   color: var(--muted);
 }
 
+.st-missing {
+  box-sizing: border-box;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
 .vp-doc .feature-shot {
   display: block;
   width: min(100%, 440px);
