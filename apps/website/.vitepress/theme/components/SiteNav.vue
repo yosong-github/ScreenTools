@@ -10,8 +10,8 @@ const open = ref(false)
 const links = [
   { text: '首页', path: '/' },
   { text: '功能', path: '/features' },
-  { text: '滤镜', path: '/guide/screen-filters' },
   { text: '开始', path: '/guide/getting-started' },
+  { text: '滤镜', path: '/guide/screen-filters' },
 ]
 
 function normalize(path: string): string {

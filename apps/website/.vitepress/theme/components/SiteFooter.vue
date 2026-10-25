@@ -7,8 +7,8 @@ const columns = [
     label: '产品',
     links: [
       { text: '功能预览', href: sitePath('/features') },
-      { text: '屏幕滤镜', href: sitePath('/guide/screen-filters') },
       { text: '快速开始', href: sitePath('/guide/getting-started') },
+      { text: '屏幕滤镜', href: sitePath('/guide/screen-filters') },
       { text: '下载 Windows 版', href: downloadUrl, external: true },
     ],
   },
@@ -35,7 +35,7 @@ const columns = [
       <div class="st-footer-grid">
         <div class="st-footer-brand">
           <img :src="withBase('/logo.svg')" alt="" width="28" height="28" />
-          <p>运行在托盘里的 Windows 显示器工具。查看、配置和滤镜都留在本机。</p>
+          <p>运行在托盘里的 Windows 显示器工具。查看和配置都留在本机。</p>
         </div>
         <nav v-for="column in columns" :key="column.label" :aria-label="column.label">
           <p class="st-hud">{{ column.label }}</p>

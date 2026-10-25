@@ -7,7 +7,7 @@ export default defineConfig({
   lang: 'zh-CN',
   title: 'ScreenTools',
   description:
-    '运行在 Windows 托盘中的显示器控制工具，可查看显示状态、调整画面，并设置全屏屏幕滤镜。',
+    '运行在 Windows 托盘中的显示器控制工具，可查看显示状态、调整画面与硬件参数，并切换刷新率和分辨率。',
   appearance: true,
   head: [
     ['link', { rel: 'icon', href: `${base}logo.svg`, type: 'image/svg+xml' }],
@@ -27,8 +27,8 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '功能预览', link: '/features' },
-      { text: '屏幕滤镜', link: '/guide/screen-filters' },
       { text: '快速开始', link: '/guide/getting-started' },
+      { text: '屏幕滤镜', link: '/guide/screen-filters' },
       { text: '下载', link: 'https://github.com/yosong-github/ScreenTools/releases/latest' },
       { text: 'GitHub', link: 'https://github.com/yosong-github/ScreenTools' },
     ],

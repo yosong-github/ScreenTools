@@ -19,9 +19,10 @@
 
 <p align="center">
   <a href="https://github.com/yosong-github/ScreenTools/releases/latest">下载 Windows 安装包</a> ·
-  <a href="apps/website/features.md">功能预览</a> ·
-  <a href="apps/website/guide/getting-started.md">快速开始</a> ·
   <a href="https://yosong-github.github.io/ScreenTools/">在线官网</a> ·
+  <a href="https://yosong-github.github.io/ScreenTools/features.html">功能预览</a> ·
+  <a href="https://yosong-github.github.io/ScreenTools/guide/getting-started.html">快速开始</a> ·
+  <a href="https://yosong-github.github.io/ScreenTools/guide/screen-filters.html">屏幕滤镜说明</a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
   <a href="https://github.com/yosong-github/ScreenTools/releases">版本发布</a> ·
   <a href="https://github.com/yosong-github/ScreenTools/issues">问题反馈</a>
@@ -37,37 +38,40 @@
 
 ## 简介
 
-ScreenTools 是一个面向 **Windows x64** 的本机显示器管理工具。它以托盘面板为主界面，没有常驻主窗口，把常用的显示器操作集中在一处：
+ScreenTools 是一个面向 **Windows x64** 的本机显示器管理工具。它以托盘面板为主界面，没有常驻主窗口。底部四个图标页分别查看设备、调整画面、切换显示模式；标题栏的齿轮进入应用设置。
 
 - 通过 **Win32 CCD** 读取并切换显示拓扑、分辨率与刷新率；
 - 通过 **DDC/CI** 读取并写入显示器硬件亮度、对比度、音量与输入源；
+- **屏幕滤镜**是后加的一项：用 Windows 全屏颜色矩阵改变整个桌面的颜色，不安装 ICC 文件，也不改硬件参数；
 - 所有数据与设置保存在本机，不经过任何云端服务。
 
-对于会中断画面的系统级配置（如显示拓扑、HDR），应用会在提交后要求 **20 秒内确认**，否则尝试恢复原有配置，降低黑屏风险。
+对于会中断画面的系统级配置（如显示拓扑、分辨率、刷新率、HDR），应用会在提交后要求 **20 秒内确认**，否则尝试恢复原有配置。
 
 ## 功能
 
-| 页面              | 能力                                                                                                 |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| 🖥️ 屏幕信息       | 分辨率、刷新率、主屏状态、连接方式与输入源；支持时调节硬件亮度与内置音量                             |
-| 🎛️ 画面配置       | 扩展 / 复制 / 仅主屏 / 仅外屏拓扑切换，日间、阅读、观影、夜间场景，硬件亮度、对比度与 HDR / 高级颜色 |
-| ⚡ 刷新率与清晰度 | 按显示器上报的模式切换刷新率与分辨率，不展示设备未提供的选项                                         |
+| 页面               | 能力                                                                                                                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 屏幕信息           | 分辨率、刷新率、主屏状态与连接方式。输入源默认只展示，打开「允许切换」并确认后才能改。支持时调节硬件亮度与显示器音量                                                                                                                                                                                   |
+| 画面配置           | 页内标题是「画面与配置」。扩展 / 复制 / 仅主屏 / 仅外屏，日间、阅读、观影、夜间场景，硬件亮度、对比度；显示器支持时显示 HDR / 高级颜色                                                                                                                                                                 |
+| 刷新率与清晰度     | 页内标题是「分辨率与刷新率」。只列出这台显示器上报的刷新率与分辨率，系统缩放仍由 Windows 管理                                                                                                                                                                                                          |
+| 屏幕滤镜（新功能） | 页内标题是「ICC 屏幕滤镜」，作用于所有显示器。预设分日常（原色、阅读、夜间、灰度）和 FPS 游戏（竞技、鲜艳、暗场、专注）；自定义滤镜可调亮度、对比度、色温等并保存方案。悬停只预览，点击才生效，退出后恢复。说明见[屏幕滤镜指南](https://yosong-github.github.io/ScreenTools/guide/screen-filters.html) |
+| 应用设置           | 从标题栏齿轮进入，不是第五个标签。主题为跟随系统、白色、黑色；安装版可开关开机自启动；版本更新检查 GitHub Release，下载后需确认才安装                                                                                                                                                                  |
 
-除此之外还提供：
+默认全局快捷键 `Ctrl+Alt+D` 只打开托盘面板，不直接切换功能。安装版默认开机自启动，可在应用设置或 Windows「启动应用」中关闭。
 
-- **托盘常驻面板**：点击图标即用，三个页面覆盖查看、配置与切换；
-- **方案管理**：保存并复用显示配置方案；
-- **快捷键与开机启动**（安装版默认开启，可随时关闭）；
-- **脱敏诊断**：导出不含敏感信息的运行日志，便于排查问题。
-
-> 实际可用的能力取决于显示器与驱动是否支持对应的 DDC/CI 命令。请在显示器 OSD 菜单中开启 **DDC/CI** 后再进行硬件参数调节。
+> 硬件亮度、对比度、音量、输入源和 HDR 是否可用，取决于显示器与驱动是否支持对应命令。调节硬件参数前，请先在显示器菜单中开启 **DDC/CI**。
 
 ## 界面
 
 <p align="center">
-  <img src="apps/website/public/images/screen-info.png" alt="屏幕信息页面" width="32%" />
-  <img src="apps/website/public/images/picture-settings.png" alt="画面配置页面" width="32%" />
-  <img src="apps/website/public/images/display-modes.png" alt="刷新率与清晰度页面" width="32%" />
+  <img src="apps/website/public/images/screen-info.png" alt="屏幕信息" width="30%" />
+  <img src="apps/website/public/images/picture-settings.png" alt="画面配置" width="30%" />
+  <img src="apps/website/public/images/display-modes.png" alt="刷新率与清晰度" width="30%" />
+</p>
+<p align="center">
+  <img src="apps/website/public/images/filter-presets.png" alt="屏幕滤镜预设" width="30%" />
+  <img src="apps/website/public/images/filter-custom.png" alt="自定义滤镜" width="30%" />
+  <img src="apps/website/public/images/app-settings.png" alt="应用设置" width="30%" />
 </p>
 
 ## 平台支持

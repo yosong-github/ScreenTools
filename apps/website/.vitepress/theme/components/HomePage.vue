@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import FilterCompare from './FilterCompare.vue'
-import FilterSwatches from './FilterSwatches.vue'
 import { downloadUrl, sitePath } from '../links'
 
 const wordmark = 'SCREENTOOLS'.split('')
 
-const tour = [
+const tour: {
+  index: string
+  kicker: string
+  badge?: string
+  title: string
+  body: string
+  image: string
+  alt: string
+  href: string
+}[] = [
   {
     index: '01',
     kicker: '屏幕信息',
@@ -37,6 +44,7 @@ const tour = [
   {
     index: '04',
     kicker: '屏幕滤镜 · 预设',
+    badge: '新功能',
     title: '日常和 FPS，先预览再点击',
     body: '页内标题是「ICC 屏幕滤镜」。日常有原色、阅读、夜间、灰度；FPS 游戏有竞技、鲜艳、暗场、专注。分界线左右是原色和当前方案。',
     image: '/images/filter-presets.png',
@@ -46,6 +54,7 @@ const tour = [
   {
     index: '04',
     kicker: '屏幕滤镜 · 自定义',
+    badge: '新功能',
     title: '滑块预览，保存后才能套用',
     body: '「我的滤镜」里点击已保存的方案，才会作用到所有显示器。亮度、对比度、色温等滑块只更新预览。',
     image: '/images/filter-custom.png',
@@ -63,21 +72,6 @@ const tour = [
   },
 ]
 
-const steps = [
-  { index: '01', title: '打开面板', body: '点击托盘图标，或按 Ctrl+Alt+D。没有单独的滤镜快捷键。' },
-  {
-    index: '02',
-    title: '进入屏幕滤镜',
-    body: '第四个页面。标题是「ICC 屏幕滤镜」，并写明所有显示器。',
-  },
-  {
-    index: '03',
-    title: '先预览，再点击',
-    body: '悬停或聚焦只更新预览。点击后立即作用于整个桌面。',
-  },
-  { index: '04', title: '退出即恢复', body: '点「原色」或退出应用，颜色矩阵回到启用前的状态。' },
-]
-
 const facts = [
   {
     index: '01',
@@ -92,7 +86,7 @@ const facts = [
   {
     index: '03',
     title: '留在本机',
-    body: '设置和滤镜方案写在本机，不经过云端。屏幕滤镜不改硬件参数，也不需要管理员权限。',
+    body: '面板设置写在本机，不经过云端，也不需要管理员权限。',
   },
 ]
 
@@ -123,32 +117,23 @@ const marquee = [
             >{{ letter }}</span
           >
         </p>
-        <div class="st-hero-stage">
-          <div class="st-hero-copy">
-            <h1 id="hero-title">你的显示器，<em>一眼掌握。</em></h1>
-            <p class="st-lede">
-              在 Windows
-              托盘里查看分辨率和输入源，调整画面与硬件参数，切换刷新率，或给整个桌面套上屏幕滤镜。控制留在本机。
-            </p>
-            <div class="st-actions">
-              <a class="st-btn st-btn-solid" :href="downloadUrl" target="_blank" rel="noreferrer">
-                下载 Windows 版
-              </a>
-              <a class="st-btn" :href="sitePath('/features')">了解功能</a>
-            </div>
-            <p class="st-hero-meta">
-              <span>Windows x64</span>
-              <span>四个托盘页</span>
-              <span>控制留在本机</span>
-            </p>
+        <div class="st-hero-copy">
+          <h1 id="hero-title">你的显示器，<em>一眼掌握。</em></h1>
+          <p class="st-lede">
+            在 Windows
+            托盘里查看分辨率和输入源，调节亮度与音量，安排画面、刷新率和分辨率。控制留在本机。
+          </p>
+          <div class="st-actions">
+            <a class="st-btn st-btn-solid" :href="downloadUrl" target="_blank" rel="noreferrer">
+              下载 Windows 版
+            </a>
+            <a class="st-btn" :href="sitePath('/features')">了解功能</a>
           </div>
-          <figure class="st-shot st-hero-panel">
-            <img
-              :src="withBase('/images/filter-presets.png')"
-              alt="托盘里的屏幕滤镜预设页，含日常、FPS 分组和实时预览"
-            />
-            <figcaption class="st-hud"><span>04</span> / 屏幕滤镜</figcaption>
-          </figure>
+          <p class="st-hero-meta">
+            <span>Windows x64</span>
+            <span>托盘面板</span>
+            <span>控制留在本机</span>
+          </p>
         </div>
       </div>
     </section>
@@ -184,6 +169,7 @@ const marquee = [
             <div class="st-tour-copy">
               <p class="st-hud">
                 <span>{{ item.index }}</span> / {{ item.kicker }}
+                <em v-if="item.badge">{{ item.badge }}</em>
               </p>
               <h3>{{ item.title }}</h3>
               <p>{{ item.body }}</p>
@@ -196,44 +182,12 @@ const marquee = [
       </div>
     </section>
 
-    <section id="filters" class="st-section" aria-labelledby="filters-title">
-      <div class="st-frame">
-        <span class="st-tick st-tick-left" aria-hidden="true"></span>
-        <span class="st-tick st-tick-right" aria-hidden="true"></span>
-        <div class="st-section-bar">
-          <p class="st-hud"><span>02</span> / 屏幕滤镜</p>
-          <p class="st-hud st-hide-sm">颜色矩阵 · 所有显示器</p>
-        </div>
-        <div class="st-section-intro">
-          <h2 id="filters-title">先看差别，<em>再</em>应用到桌面。</h2>
-          <p>
-            托盘页标题写着「ICC 屏幕滤镜」。实际效果是 Windows 全屏颜色矩阵，不安装 ICC
-            描述文件，也不改显示器硬件。同一时间只有一个滤镜，而且一定会作用到全部显示器。
-          </p>
-        </div>
-        <ol class="st-home-steps">
-          <li v-for="step in steps" :key="step.index">
-            <span>{{ step.index }}</span>
-            <strong>{{ step.title }}</strong>
-            <p>{{ step.body }}</p>
-          </li>
-        </ol>
-        <FilterCompare />
-        <div class="st-swatch-wrap">
-          <FilterSwatches />
-        </div>
-        <p class="st-section-link">
-          <a :href="sitePath('/guide/screen-filters')">查看设置说明</a>
-        </p>
-      </div>
-    </section>
-
     <section class="st-section" aria-labelledby="local-title">
       <div class="st-frame">
         <span class="st-tick st-tick-left" aria-hidden="true"></span>
         <span class="st-tick st-tick-right" aria-hidden="true"></span>
         <div class="st-section-bar">
-          <p class="st-hud"><span>03</span> / 本机</p>
+          <p class="st-hud"><span>02</span> / 本机</p>
           <p class="st-hud st-hide-sm">不经过云端</p>
         </div>
         <div class="st-section-intro">
@@ -315,16 +269,9 @@ const marquee = [
   animation: st-letter-in 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.st-hero-stage {
-  display: grid;
-  gap: 36px;
-  align-items: center;
-  margin-top: 36px;
-}
-
 .st-hero-copy {
-  max-width: 640px;
-  margin: 0 auto;
+  max-width: 680px;
+  margin: 36px auto 0;
   text-align: center;
 }
 
@@ -541,17 +488,22 @@ const marquee = [
   margin: 18px 0 0;
 }
 
-.st-facts,
-.st-home-steps {
+.st-facts {
   display: grid;
   gap: 1px;
   background: var(--line);
   border-top: 1px solid var(--line);
 }
 
-.st-facts article,
-.st-home-steps li {
+.st-facts article {
   background: var(--bg);
+}
+
+.st-tour-copy .st-hud em {
+  margin-left: 10px;
+  color: var(--accent-ink);
+  font-style: normal;
+  letter-spacing: 0.14em;
 }
 
 .st-tour {
@@ -578,8 +530,7 @@ const marquee = [
 }
 
 .st-tour-copy p,
-.st-facts article p,
-.st-home-steps p {
+.st-facts article p {
   margin: 10px 0 0;
   color: var(--muted);
   line-height: 1.7;
@@ -597,71 +548,6 @@ const marquee = [
   width: min(100%, 280px);
   height: auto;
   margin: 0 auto;
-}
-
-.st-shot figcaption {
-  margin: 12px -16px 0;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-}
-
-.st-hero-panel {
-  width: min(300px, 100%);
-  margin: 0 auto;
-}
-
-.st-hero-panel figcaption {
-  text-align: center;
-}
-
-.st-home-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.st-home-steps li {
-  padding: 22px;
-}
-
-.st-home-steps span {
-  color: var(--faint);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-}
-
-.st-home-steps strong {
-  display: block;
-  margin-top: 10px;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-}
-
-.st-swatch-wrap {
-  padding: 28px 24px 8px;
-  border-top: 1px solid var(--line);
-}
-
-.st-section-link {
-  margin: 0;
-  padding: 8px 24px 36px;
-}
-
-.st-section-link a {
-  color: var(--accent-ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-
-.st-section-link a:hover {
-  color: var(--ink);
 }
 
 .st-facts article {
@@ -715,33 +601,12 @@ const marquee = [
 }
 
 @media (min-width: 800px) {
-  .st-home-steps,
   .st-facts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .st-home-steps {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 960px) {
-  .st-hero-stage {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 56px;
-    margin-top: 48px;
-  }
-
-  .st-hero-copy,
-  .st-hero-copy .st-actions,
-  .st-hero-copy .st-hero-meta,
-  .st-hero-panel figcaption {
-    margin-right: 0;
-    margin-left: 0;
-    text-align: left;
-    justify-content: flex-start;
-  }
-
   .st-tour-item {
     grid-template-columns: minmax(0, 1fr) 300px;
     gap: 48px;
