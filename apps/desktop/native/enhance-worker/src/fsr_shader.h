@@ -229,7 +229,9 @@ float4 RCASPSMain(PSIn input) : SV_TARGET
   float hL = hB * 0.5 + (hR * 0.5 + hG);
 
   float nz = 0.25 * bL + 0.25 * dL + 0.25 * fL + 0.25 * hL - eL;
-  nz = saturate(abs(nz) * (1.0 / (max(max(max(bL, dL), max(eL, fL)), hL) - min(min(min(bL, dL), min(eL, fL)), hL))));
+  float range = max(max(max(bL, dL), max(eL, fL)), hL) -
+                min(min(min(bL, dL), min(eL, fL)), hL);
+  nz = range > 1.0 / 32768.0 ? saturate(abs(nz) / range) : 1.0;
   nz = -0.5 * nz + 1.0;
 
   float mn4R = min(min(min(bR, dR), fR), hR);
