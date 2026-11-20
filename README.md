@@ -114,7 +114,7 @@ pnpm install   # 安装依赖
 pnpm dev       # 启动桌面应用（electron-vite）
 ```
 
-「窗口增强」不需要额外组件；「本地视频」需要额外的 mpv + VapourSynth + RIFE 组件，组件准备、预设和已知限制见 [画质增强 M1](docs/enhance-m1.md)。窗口增强的设计、裁剪和快捷键见 [画质增强 M2](docs/enhance-m2.md)。
+「窗口增强」不需要额外组件，但原生 worker 需要 Windows + CMake + Visual Studio C++ 工具链；`build:win` / `build:unpack` 会自动编译，单独编译用 `pnpm --filter @screentools/desktop build:enhance-worker`。设计、裁剪和快捷键见 [画质增强 M2](docs/enhance-m2.md)。「本地视频」需要额外的 mpv + VapourSynth + RIFE 组件，组件准备、预设和已知限制见 [画质增强 M1](docs/enhance-m1.md)。
 
 官网位于 `apps/website`，使用 VitePress：
 

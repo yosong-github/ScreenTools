@@ -362,16 +362,7 @@ export class EnhanceService {
     const override = process.env.SCREENTOOLS_ENHANCE_WORKER?.trim()
     if (override) return override
     if (app.isPackaged) return join(process.resourcesPath, 'enhance-worker.exe')
-    return join(
-      app.getAppPath(),
-      '..',
-      '..',
-      'native',
-      'enhance-worker',
-      'build',
-      'Release',
-      'enhance-worker.exe',
-    )
+    return join(app.getAppPath(), 'native', 'enhance-worker', 'dist', 'enhance-worker.exe')
   }
 
   private stopWindowInternal(): void {

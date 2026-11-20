@@ -8,20 +8,32 @@ M2 只做**超分**；插帧、音频延迟和自动音画同步属于 M3。
 
 ## 2. 当前原型
 
-源码：`native/enhance-worker/`
+源码：`apps/desktop/native/enhance-worker/`
 
 ```text
-native/enhance-worker/
+apps/desktop/native/enhance-worker/
 ├─ CMakeLists.txt
-└─ src/main.cpp
+├─ src/main.cpp
+├─ build/              # 编译中间文件（gitignore）
+└─ dist/               # 打包用 enhance-worker.exe（gitignore）
 ```
 
-编译：
+推荐用桌面应用的脚本编译，它会依次尝试 Visual Studio 2026 / 2022 / 2019，并把产物复制到 `dist/enhance-worker.exe`：
 
 ```powershell
-cmake -S native\enhance-worker -B native\enhance-worker\build -G "Visual Studio 18 2026" -A x64
-cmake --build native\enhance-worker\build --config Release
+pnpm --filter @screentools/desktop build:enhance-worker
 ```
+
+也可以手动编译：
+
+```powershell
+cmake -S apps\desktop\native\enhance-worker -B apps\desktop\native\enhance-worker\build -G "Visual Studio 18 2026" -A x64
+cmake --build apps\desktop\native\enhance-worker\build --config Release
+```
+
+手动编译后，把 `build\Release\enhance-worker.exe` 复制到 `dist\enhance-worker.exe`。
+
+`build:win` / `build:unpack` 会先运行上面的脚本再调用 electron-builder。非 Windows 平台无法编译（依赖 WGC），需要先把 Windows 下编好的 `enhance-worker.exe` 放到 `dist/`，否则打包会失败。
 
 命令：
 
@@ -37,7 +49,7 @@ enhance-worker.exe --capture <hwnd> 15
 
 直接运行 worker 时没有全局热键（快捷键由 Electron 主进程注册）；开发时用时间参数或结束进程停止。
 
-打包：`apps/desktop/electron-builder.yml` 通过 `extraResources` 把 `enhance-worker.exe` 放到 `resources/`；worker 使用静态 VC 运行库（`/MT`），目标机器不需要额外安装 Visual C++ Redistributable。
+打包：`apps/desktop/electron-builder.yml` 通过 `extraResources` 把 `native/enhance-worker/dist/enhance-worker.exe` 放到 `resources/`；worker 使用静态 VC 运行库（`/MT`），目标机器不需要额外安装 Visual C++ Redistributable。`beforePack` 钩子会检查 `dist/enhance-worker.exe`，文件缺失时直接让打包失败，不会静默生成缺少窗口增强组件的安装包。
 
 已验证：
 
