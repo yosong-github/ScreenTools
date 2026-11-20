@@ -25,6 +25,12 @@ interface PanelMotionState {
 }
 
 const panelMotion = new WeakMap<BrowserWindow, PanelMotionState>()
+let panelPinned = false
+
+/** 演示/便携启动时保持面板展开，不因失焦自动收起。 */
+export function setPanelPinned(pinned: boolean): void {
+  panelPinned = pinned
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
@@ -138,6 +144,17 @@ export function showTrayWindow(window: BrowserWindow): void {
       y: target.y - PANEL_SHADOW_GUTTER,
     })
     window.webContents.send('panel:motion', 'shown', !wasVisible)
+    // 冷启动/打包版可能先收到 hidden 初始化事件；稍后直接兜底一次可见态。
+    setTimeout(() => {
+      if (
+        !window.isDestroyed() &&
+        window.isVisible() &&
+        (state.phase === 'shown' || state.phase === 'showing')
+      )
+        void window.webContents
+          .executeJavaScript("document.documentElement.setAttribute('data-panel-motion','shown')")
+          .catch(() => {})
+    }, 350)
     state.timer = setTimeout(
       () => {
         state.timer = undefined
@@ -249,6 +266,7 @@ export function createTrayWindow(shouldClose: () => boolean = () => false): Brow
     state.blurTimer = undefined
   })
   window.on('blur', () => {
+    if (panelPinned) return
     const state = getMotionState(window)
     if (state.modalOpen) return
     if (state.blurTimer) clearTimeout(state.blurTimer)
@@ -288,10 +306,16 @@ export function createTrayWindow(shouldClose: () => boolean = () => false): Brow
     return { action: 'deny' }
   })
 
+  const initialHash = process.argv.includes('--enhance') ? '/enhance' : undefined
   const loading =
     is.dev && process.env.ELECTRON_RENDERER_URL
-      ? window.loadURL(process.env.ELECTRON_RENDERER_URL)
-      : window.loadFile(join(__dirname, '../renderer/index.html'))
+      ? window.loadURL(
+          `${process.env.ELECTRON_RENDERER_URL}${initialHash ? `#${initialHash}` : ''}`,
+        )
+      : window.loadFile(
+          join(__dirname, '../renderer/index.html'),
+          initialHash ? { hash: initialHash } : undefined,
+        )
 
   void loading.catch((error: unknown) => {
     console.error('窗口页面加载失败：', error)

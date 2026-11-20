@@ -14,6 +14,8 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 .pnpm-store
+apps/desktop/native/**/build/
+apps/desktop/native/**/dist/
 .agents/
 .claude/
 

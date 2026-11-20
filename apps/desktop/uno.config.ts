@@ -39,7 +39,7 @@ export default defineConfig({
     'header-icon':
       'grid place-items-center flex-none w-[43px] h-[43px] p-0 border-0 rounded-full bg-surface text-text hover:bg-hover',
     'tab-bar':
-      'relative grid grid-cols-4 gap-[5px] p-[5px] border border-border rounded-[15px] bg-surface',
+      'relative grid grid-cols-5 gap-[5px] p-[5px] border border-border rounded-[15px] bg-surface',
     'tab-item':
       'relative grid place-items-center min-w-0 border-0 rounded-[11px] bg-transparent text-muted',
     'settings-bar':

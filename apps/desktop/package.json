@@ -10,9 +10,10 @@
     "dev": "electron-vite dev",
     "preview": "electron-vite preview",
     "build": "electron-vite build",
+    "build:enhance-worker": "node scripts/build-enhance-worker.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
-    "build:unpack": "pnpm build && electron-builder --win --x64 --dir --publish never",
-    "build:win": "pnpm build && electron-builder --win --x64 --publish never",
+    "build:unpack": "pnpm build:enhance-worker && pnpm build && electron-builder --win --x64 --dir --publish never",
+    "build:win": "pnpm build:enhance-worker && pnpm build && electron-builder --win --x64 --publish never",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.web.json",
     "postinstall": "install-electron"

@@ -201,7 +201,10 @@ onUnmounted(() => {
     </div>
     <div class="page-content">
       <RouterView v-if="settingsOpen" />
-      <div v-else-if="!selected && !displays.length" class="empty-state">
+      <div
+        v-else-if="!selected && !displays.length && route.name !== 'enhance'"
+        class="empty-state"
+      >
         <PanelIcon name="monitor" :size="42" />
         <h2 class="empty-title">等待显示器信息</h2>
         <p class="empty-message">
@@ -210,7 +213,7 @@ onUnmounted(() => {
         <button class="primary-action" :disabled="busy" @click="refreshAll">重新检测</button>
       </div>
       <RouterView v-else v-slot="{ Component }">
-        <KeepAlive :max="4">
+        <KeepAlive :max="5">
           <component :is="Component" />
         </KeepAlive>
       </RouterView>

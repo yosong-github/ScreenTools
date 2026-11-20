@@ -35,6 +35,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: 质量检查
         run: pnpm check
+      - name: 构建窗口增强 worker
+        run: pnpm --filter @screentools/desktop build:enhance-worker
       - name: 构建 EXE（不发布）
         run: pnpm --filter @screentools/desktop exec electron-builder --win --x64 --publish never
       - name: 上传 Windows 安装包
