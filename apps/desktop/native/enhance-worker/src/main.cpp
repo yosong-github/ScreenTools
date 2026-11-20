@@ -19,13 +19,17 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <iostream>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include "fsr_shader.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace winrt;
@@ -40,53 +44,6 @@ std::atomic<bool> g_stopRequested{false};
 constexpr int kToastWidth = 640;
 constexpr int kToastHeight = 108;
 constexpr UINT_PTR kToastTimer = 1;
-
-const char* kShaderSource = R"(
-Texture2D<float4> tex : register(t0);
-SamplerState samp : register(s0);
-
-struct VSOut {
-  float4 pos : SV_POSITION;
-  float2 uv : TEXCOORD0;
-};
-
-VSOut VSMain(uint id : SV_VertexID) {
-  float2 p = float2((id << 1) & 2, id & 2);
-  VSOut result;
-  result.pos = float4(p.x * 2.0 - 1.0, 1.0 - p.y * 2.0, 0.0, 1.0);
-  result.uv = p;
-  return result;
-}
-
-float4 CubicWeights(float t) {
-  float t2 = t * t;
-  float t3 = t2 * t;
-  return float4(
-    -0.5 * t3 + t2 - 0.5 * t,
-     1.5 * t3 - 2.5 * t2 + 1.0,
-    -1.5 * t3 + 2.0 * t2 + 0.5 * t,
-     0.5 * t3 - 0.5 * t2);
-}
-
-float4 PSMain(VSOut input) : SV_TARGET {
-  uint width, height;
-  tex.GetDimensions(width, height);
-  float2 size = float2(width, height);
-  float2 coord = input.uv * size - 0.5;
-  float2 base = floor(coord);
-  float2 fraction = coord - base;
-  float4 wx = CubicWeights(fraction.x);
-  float4 wy = CubicWeights(fraction.y);
-  float4 color = 0;
-  [unroll] for (int y = -1; y <= 2; ++y) {
-    [unroll] for (int x = -1; x <= 2; ++x) {
-      float2 samplePos = (base + float2(x, y) + 0.5) / size;
-      color += tex.SampleLevel(samp, samplePos, 0) * wx[x + 1] * wy[y + 1];
-    }
-  }
-  return color;
-}
-)";
 
 std::string ToUtf8(const std::wstring& value) {
   if (value.empty()) return {};
@@ -252,7 +209,12 @@ struct CaptureState {
   ComPtr<ID3D11ShaderResourceView> captureView;
   ComPtr<ID3D11SamplerState> sampler;
   ComPtr<ID3D11VertexShader> vertexShader;
-  ComPtr<ID3D11PixelShader> pixelShader;
+  ComPtr<ID3D11PixelShader> easuShader;
+  ComPtr<ID3D11PixelShader> rcasShader;
+  ComPtr<ID3D11Buffer> fsrParams;
+  ComPtr<ID3D11Texture2D> upscaleTexture;
+  ComPtr<ID3D11RenderTargetView> upscaleRTV;
+  ComPtr<ID3D11ShaderResourceView> upscaleSRV;
   ComPtr<ID3D11RenderTargetView> renderTargets[2];
   HWND overlay{};
   HWND toast{};
@@ -273,6 +235,8 @@ struct CaptureState {
   float viewportY{};
   float viewportWidth{};
   float viewportHeight{};
+  UINT contentWidth{};
+  UINT contentHeight{};
   bool leftDown{};
   bool rightDown{};
   bool middleDown{};
@@ -482,19 +446,81 @@ void UpdateViewport(CaptureState& state) {
   }
 }
 
+struct FsrParams {
+  uint32_t con0[4];
+  uint32_t con1[4];
+  uint32_t con2[4];
+  uint32_t con3[4];
+  uint32_t rcas[4];
+  int32_t viewportOffset[2];
+  int32_t outputSize[2];
+};
+
+static_assert(sizeof(FsrParams) == 96);
+
+uint32_t FloatBits(float value) {
+  uint32_t bits = 0;
+  memcpy(&bits, &value, sizeof(bits));
+  return bits;
+}
+
+void BuildEasuConstants(
+    FsrParams& params,
+    float inputViewportX,
+    float inputViewportY,
+    float inputSizeX,
+    float inputSizeY,
+    float outputSizeX,
+    float outputSizeY) {
+  const float invOutputX = 1.0f / outputSizeX;
+  const float invOutputY = 1.0f / outputSizeY;
+  const float invInputX = 1.0f / inputSizeX;
+  const float invInputY = 1.0f / inputSizeY;
+
+  params.con0[0] = FloatBits(inputViewportX * invOutputX);
+  params.con0[1] = FloatBits(inputViewportY * invOutputY);
+  params.con0[2] = FloatBits(0.5f * inputViewportX * invOutputX - 0.5f);
+  params.con0[3] = FloatBits(0.5f * inputViewportY * invOutputY - 0.5f);
+  params.con1[0] = FloatBits(invInputX);
+  params.con1[1] = FloatBits(invInputY);
+  params.con1[2] = FloatBits(invInputX);
+  params.con1[3] = FloatBits(-invInputY);
+  params.con2[0] = FloatBits(-invInputX);
+  params.con2[1] = FloatBits(2.0f * invInputY);
+  params.con2[2] = FloatBits(invInputX);
+  params.con2[3] = FloatBits(2.0f * invInputY);
+  params.con3[0] = FloatBits(0.0f);
+  params.con3[1] = FloatBits(4.0f * invInputY);
+  params.con3[2] = 0;
+  params.con3[3] = 0;
+  params.rcas[0] = FloatBits(std::exp2(-0.1f));
+  params.rcas[1] = 0;
+  params.rcas[2] = 0;
+  params.rcas[3] = 0;
+}
+
 bool CreateShaderResources(CaptureState& state) {
   ComPtr<ID3DBlob> vertexBlob;
-  ComPtr<ID3DBlob> pixelBlob;
+  ComPtr<ID3DBlob> easuBlob;
+  ComPtr<ID3DBlob> rcasBlob;
   ComPtr<ID3DBlob> error;
-  HRESULT result = D3DCompile(kShaderSource, strlen(kShaderSource), nullptr, nullptr, nullptr,
+  HRESULT result = D3DCompile(kFsrShaderSource, strlen(kFsrShaderSource), nullptr, nullptr, nullptr,
                               "VSMain", "vs_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &vertexBlob,
                               &error);
   if (FAILED(result)) {
     if (error) std::cerr << static_cast<const char*>(error->GetBufferPointer()) << "\n";
     return false;
   }
-  result = D3DCompile(kShaderSource, strlen(kShaderSource), nullptr, nullptr, nullptr, "PSMain",
-                      "ps_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &pixelBlob, &error);
+  result = D3DCompile(kFsrShaderSource, strlen(kFsrShaderSource), nullptr, nullptr, nullptr,
+                      "EASUPSMain", "ps_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &easuBlob,
+                      &error);
+  if (FAILED(result)) {
+    if (error) std::cerr << static_cast<const char*>(error->GetBufferPointer()) << "\n";
+    return false;
+  }
+  result = D3DCompile(kFsrShaderSource, strlen(kFsrShaderSource), nullptr, nullptr, nullptr,
+                      "RCASPSMain", "ps_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &rcasBlob,
+                      &error);
   if (FAILED(result)) {
     if (error) std::cerr << static_cast<const char*>(error->GetBufferPointer()) << "\n";
     return false;
@@ -503,12 +529,16 @@ bool CreateShaderResources(CaptureState& state) {
                                               vertexBlob->GetBufferSize(), nullptr,
                                               &state.vertexShader)))
     return false;
-  if (FAILED(state.device->CreatePixelShader(pixelBlob->GetBufferPointer(),
-                                             pixelBlob->GetBufferSize(), nullptr,
-                                             &state.pixelShader)))
+  if (FAILED(state.device->CreatePixelShader(easuBlob->GetBufferPointer(),
+                                             easuBlob->GetBufferSize(), nullptr,
+                                             &state.easuShader)))
+    return false;
+  if (FAILED(state.device->CreatePixelShader(rcasBlob->GetBufferPointer(),
+                                             rcasBlob->GetBufferSize(), nullptr,
+                                             &state.rcasShader)))
     return false;
   D3D11_SAMPLER_DESC samplerDesc{};
-  samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+  samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
   samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
   samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
   samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -540,6 +570,51 @@ bool CreateCaptureTexture(CaptureState& state, UINT width, UINT height) {
                                                           &state.captureView));
 }
 
+bool CreateUpscaleResources(CaptureState& state) {
+  state.contentWidth =
+      static_cast<UINT>(std::max(1L, std::lround(state.viewportWidth)));
+  state.contentHeight =
+      static_cast<UINT>(std::max(1L, std::lround(state.viewportHeight)));
+
+  D3D11_TEXTURE2D_DESC description{};
+  description.Width = state.contentWidth;
+  description.Height = state.contentHeight;
+  description.MipLevels = 1;
+  description.ArraySize = 1;
+  description.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  description.SampleDesc.Count = 1;
+  description.Usage = D3D11_USAGE_DEFAULT;
+  description.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+  if (FAILED(state.device->CreateTexture2D(&description, nullptr, &state.upscaleTexture)))
+    return false;
+  if (FAILED(state.device->CreateRenderTargetView(state.upscaleTexture.Get(), nullptr,
+                                                  &state.upscaleRTV)))
+    return false;
+  if (FAILED(state.device->CreateShaderResourceView(state.upscaleTexture.Get(), nullptr,
+                                                    &state.upscaleSRV)))
+    return false;
+
+  FsrParams params{};
+  BuildEasuConstants(params, static_cast<float>(state.sourceWidth),
+                     static_cast<float>(state.sourceHeight),
+                     static_cast<float>(state.sourceWidth),
+                     static_cast<float>(state.sourceHeight),
+                     static_cast<float>(state.contentWidth),
+                     static_cast<float>(state.contentHeight));
+  params.viewportOffset[0] = static_cast<int32_t>(std::lround(state.viewportX));
+  params.viewportOffset[1] = static_cast<int32_t>(std::lround(state.viewportY));
+  params.outputSize[0] = static_cast<int32_t>(state.contentWidth);
+  params.outputSize[1] = static_cast<int32_t>(state.contentHeight);
+
+  D3D11_BUFFER_DESC buffer{};
+  buffer.ByteWidth = sizeof(FsrParams);
+  buffer.Usage = D3D11_USAGE_DEFAULT;
+  buffer.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+  if (FAILED(state.device->CreateBuffer(&buffer, nullptr, &state.fsrParams))) return false;
+  state.context->UpdateSubresource(state.fsrParams.Get(), 0, nullptr, &params, 0, 0);
+  return true;
+}
+
 bool CreateRenderTargets(CaptureState& state) {
   ComPtr<ID3D11Texture2D> buffer;
   const HRESULT getResult = state.swapchain->GetBuffer(0, IID_PPV_ARGS(&buffer));
@@ -557,24 +632,38 @@ bool CreateRenderTargets(CaptureState& state) {
 }
 
 void Render(CaptureState& state) {
-  const float black[4] = {0, 0, 0, 1};
-  state.context->OMSetRenderTargets(1, state.renderTargets[0].GetAddressOf(), nullptr);
-  state.context->ClearRenderTargetView(state.renderTargets[0].Get(), black);
-
-  D3D11_VIEWPORT viewport{};
-  viewport.TopLeftX = state.viewportX;
-  viewport.TopLeftY = state.viewportY;
-  viewport.Width = state.viewportWidth;
-  viewport.Height = state.viewportHeight;
-  viewport.MinDepth = 0;
-  viewport.MaxDepth = 1;
-  state.context->RSSetViewports(1, &viewport);
   state.context->IASetInputLayout(nullptr);
   state.context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   state.context->VSSetShader(state.vertexShader.Get(), nullptr, 0);
-  state.context->PSSetShader(state.pixelShader.Get(), nullptr, 0);
-  state.context->PSSetShaderResources(0, 1, state.captureView.GetAddressOf());
+  state.context->PSSetConstantBuffers(0, 1, state.fsrParams.GetAddressOf());
   state.context->PSSetSamplers(0, 1, state.sampler.GetAddressOf());
+
+  ID3D11ShaderResourceView* nullView = nullptr;
+  state.context->PSSetShaderResources(0, 1, &nullView);
+  state.context->OMSetRenderTargets(1, state.upscaleRTV.GetAddressOf(), nullptr);
+  D3D11_VIEWPORT easuViewport{};
+  easuViewport.Width = static_cast<float>(state.contentWidth);
+  easuViewport.Height = static_cast<float>(state.contentHeight);
+  easuViewport.MinDepth = 0;
+  easuViewport.MaxDepth = 1;
+  state.context->RSSetViewports(1, &easuViewport);
+  state.context->PSSetShader(state.easuShader.Get(), nullptr, 0);
+  state.context->PSSetShaderResources(0, 1, state.captureView.GetAddressOf());
+  state.context->Draw(3, 0);
+
+  const float black[4] = {0, 0, 0, 1};
+  state.context->OMSetRenderTargets(1, state.renderTargets[0].GetAddressOf(), nullptr);
+  state.context->ClearRenderTargetView(state.renderTargets[0].Get(), black);
+  D3D11_VIEWPORT rcasViewport{};
+  rcasViewport.TopLeftX = state.viewportX;
+  rcasViewport.TopLeftY = state.viewportY;
+  rcasViewport.Width = static_cast<float>(state.contentWidth);
+  rcasViewport.Height = static_cast<float>(state.contentHeight);
+  rcasViewport.MinDepth = 0;
+  rcasViewport.MaxDepth = 1;
+  state.context->RSSetViewports(1, &rcasViewport);
+  state.context->PSSetShader(state.rcasShader.Get(), nullptr, 0);
+  state.context->PSSetShaderResources(0, 1, state.upscaleSRV.GetAddressOf());
   state.context->Draw(3, 0);
   state.swapchain->Present(1, 0);
 }
@@ -661,6 +750,10 @@ int CaptureWindow(HWND target, int seconds, RECT crop, bool hasCrop) {
     return 1;
   }
   UpdateViewport(state);
+  if (!CreateUpscaleResources(state)) {
+    std::cerr << "FSR upscale initialization failed\n";
+    return 1;
+  }
 
   ComPtr<IDXGIDevice> dxgiDevice;
   state.device.As(&dxgiDevice);

@@ -399,6 +399,10 @@ onDeactivated(() => {
           <strong>Ctrl+Alt+Shift+E</strong> 停止。
         </p>
         <p class="card-note">
+          当前窗口增强使用 FSR 1.0 EASU + RCAS 做空间超分和锐化；比纯缩放清晰，但不等同于 AI
+          补细节。
+        </p>
+        <p class="card-note">
           鼠标移动/点击/滚轮会按缩放比例转发到原窗口；先在画面上单击一下，键盘输入会回到原窗口。
         </p>
         <p class="card-note">

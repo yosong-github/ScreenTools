@@ -14,6 +14,8 @@ M2 只做**超分**；插帧、音频延迟和自动音画同步属于 M3。
 apps/desktop/native/enhance-worker/
 ├─ CMakeLists.txt
 ├─ src/main.cpp
+├─ src/fsr_shader.h    # FSR 1.0 EASU + RCAS
+├─ LICENSES/FSR1.txt   # AMD FidelityFX MIT 许可
 ├─ build/              # 编译中间文件（gitignore）
 └─ dist/               # 打包用 enhance-worker.exe（gitignore）
 ```
@@ -61,7 +63,7 @@ enhance-worker.exe --capture <hwnd> 15
 
 当前版本已经支持：
 
-- **全屏等比缩放**：覆盖窗口铺满目标显示器，画面按源窗口比例居中，bicubic 缩放；
+- **全屏等比缩放**：覆盖窗口铺满目标显示器，画面按源窗口比例居中；使用 FSR 1.0 EASU 做边缘自适应空间超分，再用 RCAS 锐化；
 - **窗口选择 UI**：Electron「画质增强 → 窗口增强」列出窗口，选择后开始/停止；
 - **视频区域框选**：在窗口截图上拖拽框出视频画面，只把这一块等比铺满显示器；不带侧边栏/标题栏，视频本身不切边；目标窗口大小和位置不变；
 - **鼠标转发**：移动/左键/右键/滚轮按缩放比例映射回原窗口客户区；优先投递到鼠标下的子窗口；
@@ -79,6 +81,7 @@ enhance-worker.exe --capture <hwnd> 15
   - 最佳场景：让播放器窗口保持 1920×1080（或更低），再由 M2 覆盖到 1440p/4K。
   - 全屏 4K 播放器本身已经是 4K 输出，收益会明显变小。
 - **DRM 内容**：受保护视频可能黑屏；普通视频通常可捕获。
+- **FSR 1.0 不是 AI**：EASU/RCAS 是空间边缘重建和锐化，不能像 modernAnime 那样补出模型推断的细节；动画/CG 的 AI 超分仍在本地视频管线里。
 - **输入映射**：鼠标事件已按等比缩放映射回原窗口客户区（`PostMessage`）；键盘焦点保持在原窗口。
   - 已在 B 站客户端和 Edge 验证点击、滚轮、键盘输入可用。
   - 使用 Raw Input 的程序（部分游戏）可能不响应合成鼠标消息，需要后续做低级鼠标钩子或 `SendInput` 方案。
@@ -93,7 +96,7 @@ enhance-worker.exe --capture <hwnd> 15
 
 ## 4. 下一步
 
-1. **超分 shader**：当前 bicubic 只是高质量缩放；下一阶段接 FSR1 EASU/RCAS 或 Anime4K/FSRCNNX。
+1. **超分 shader**：当前已有 FSR 1.0 EASU/RCAS；下一阶段接 Anime4K、FSRCNNX 或 modernAnime 等更重的模型/着色器。
 2. **输入转发增强**：为 Raw Input 程序补低级鼠标钩子/`SendInput`，并支持拖拽期间的捕获状态；完善多显示器坐标。
 3. **窗口跟踪**：目标窗口移动/缩放/最小化时自动更新覆盖层和捕获尺寸。
 4. **常驻与热键**：从前台窗口一键开始捕获、托盘状态；当前已有 `Ctrl+Alt+G` 切换和 `Ctrl+Alt+Shift+E` 停止。
