@@ -9,6 +9,9 @@ directories:
 files:
   - out/**
   - package.json
+extraResources:
+  - from: ../../native/enhance-worker/build/Release/enhance-worker.exe
+    to: enhance-worker.exe
 asarUnpack:
   - node_modules/koffi/**
   - node_modules/@koromix/**

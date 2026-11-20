@@ -1,12 +1,19 @@
 import { app } from 'electron'
 import type { BrowserWindow } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
-import { createTrayWindow, showTrayWindow, toggleTrayWindow } from './window'
+import { createTrayWindow, setPanelPinned, showTrayWindow, toggleTrayWindow } from './window'
 import { createScreenToolsCore } from './core/screentools-core'
 import type { ScreenToolsCore } from './core/screentools-core'
-import { registerIpcHandlers, registerControlIpc, registerAppIpc, registerUpdateIpc } from './ipc'
+import {
+  registerIpcHandlers,
+  registerControlIpc,
+  registerAppIpc,
+  registerEnhanceIpc,
+  registerUpdateIpc,
+} from './ipc'
 import { createControlService } from './services/control-service'
 import type { ControlService } from './services/control-service'
+import { EnhanceService } from './services/enhance-service'
 import { UpdateService } from './services/update-service'
 import type { Tray } from 'electron'
 import { createTray } from './tray'
@@ -19,7 +26,9 @@ let tray: Tray | undefined
 let unregisterControl: (() => void) | undefined
 let unregisterApp: (() => void) | undefined
 let unregisterUpdate: (() => void) | undefined
+let unregisterEnhance: (() => void) | undefined
 let updater: UpdateService | undefined
+let enhance: EnhanceService | undefined
 let stopDisplaySubscription: (() => void) | undefined
 let quitting = false
 let disposed = false
@@ -80,6 +89,15 @@ if (!app.requestSingleInstanceLock()) {
         showPanel,
       )
       unregisterControl = registerControlIpc(control, () => mainWindow)
+      enhance = new EnhanceService(
+        app.getPath('userData'),
+        (state) => {
+          if (mainWindow && !mainWindow.isDestroyed())
+            mainWindow.webContents.send('enhance:changed', state)
+        },
+        () => mainWindow,
+      )
+      unregisterEnhance = registerEnhanceIpc(enhance, () => mainWindow)
       updater = new UpdateService((state) => {
         if (mainWindow && !mainWindow.isDestroyed())
           mainWindow.webContents.send('update:changed', state)
@@ -92,8 +110,14 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.on('closed', () => {
         mainWindow = null
       })
+      // 便携版/快捷方式可传 --show，窗口创建后立即弹出，不必等待原生服务初始化；
+      // --enhance 会直接打开画质增强页，并保持面板展开。
+      if (process.argv.includes('--show') || process.argv.includes('--enhance')) {
+        setPanelPinned(true)
+        showPanel()
+      }
       tray = createTray(control, togglePanel, () => app.quit())
-      await control.init()
+      await Promise.all([control.init(), enhance.init()])
       updater.start()
       app.on('activate', showPanel)
     })
@@ -111,7 +135,9 @@ if (!app.requestSingleInstanceLock()) {
     unregisterControl?.()
     unregisterApp?.()
     unregisterUpdate?.()
+    unregisterEnhance?.()
     updater?.stop()
+    enhance?.dispose()
     stopDisplaySubscription?.()
     core?.dispose()
     tray?.destroy()

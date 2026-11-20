@@ -5,6 +5,7 @@ export const trayTabs = [
   { name: 'picture', icon: 'sliders', label: '画面配置' },
   { name: 'modes', icon: 'resolution', label: '刷新率与清晰度' },
   { name: 'filters', icon: 'contrast', label: '屏幕滤镜' },
+  { name: 'enhance', icon: 'sparkles', label: '画质增强' },
 ] as const
 
 export type TrayTab = (typeof trayTabs)[number]['name']
@@ -33,6 +34,11 @@ export const router = createRouter({
       path: '/filters',
       name: 'filters',
       component: () => import('@renderer/views/filters/ScreenFiltersView.vue'),
+    },
+    {
+      path: '/enhance',
+      name: 'enhance',
+      component: () => import('@renderer/views/enhance/EnhanceView.vue'),
     },
     {
       path: '/settings',

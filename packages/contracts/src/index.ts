@@ -1,5 +1,13 @@
 import type { ControlCommand, ControlState } from './control'
+import type {
+  EnhanceCrop,
+  EnhancePreset,
+  EnhanceState,
+  EnhanceWindow,
+  EnhanceWindowSnapshot,
+} from './enhance'
 export * from './control'
+export * from './enhance'
 
 export const displayChannels = {
   snapshot: 'displays:snapshot',
@@ -61,6 +69,17 @@ export interface ScreenToolsApi {
   getControlState(): Promise<ControlState>
   onControlChanged(listener: () => void): () => void
   executeControl(command: ControlCommand): Promise<ControlState>
+  getEnhanceState(): Promise<EnhanceState>
+  listEnhanceWindows(): Promise<EnhanceWindow[]>
+  captureEnhanceWindow(hwnd: number): Promise<EnhanceWindowSnapshot | null>
+  startEnhanceWindow(target: EnhanceWindow, crop?: EnhanceCrop): Promise<EnhanceState>
+  toggleEnhanceWindow(): Promise<EnhanceState>
+  stopEnhanceWindow(): Promise<EnhanceState>
+  chooseEnhanceComponent(): Promise<EnhanceState>
+  openEnhanceVideo(file?: string): Promise<EnhanceState>
+  stopEnhancePlayback(): Promise<EnhanceState>
+  setEnhancePreset(preset: EnhancePreset): Promise<EnhanceState>
+  onEnhanceChanged(listener: (state: EnhanceState) => void): () => void
 }
 
 export type DisplayId = string

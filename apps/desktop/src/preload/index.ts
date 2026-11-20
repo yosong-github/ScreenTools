@@ -4,6 +4,11 @@ import type {
   ScreenToolsApi,
   ControlState,
   DisplaySnapshot,
+  EnhanceCrop,
+  EnhancePreset,
+  EnhanceState,
+  EnhanceWindow,
+  EnhanceWindowSnapshot,
   UpdateState,
 } from '@screentools/contracts'
 import { version } from '../../package.json'
@@ -69,6 +74,45 @@ const api: Readonly<ScreenToolsApi> = {
   },
   async executeControl(command) {
     return ipcRenderer.invoke('controls:execute', command) as Promise<ControlState>
+  },
+  async getEnhanceState() {
+    return ipcRenderer.invoke('enhance:state') as Promise<EnhanceState>
+  },
+  async listEnhanceWindows() {
+    return ipcRenderer.invoke('enhance:list-windows') as Promise<EnhanceWindow[]>
+  },
+  async captureEnhanceWindow(hwnd: number) {
+    return ipcRenderer.invoke(
+      'enhance:capture-window',
+      hwnd,
+    ) as Promise<EnhanceWindowSnapshot | null>
+  },
+  async startEnhanceWindow(target: EnhanceWindow, crop?: EnhanceCrop) {
+    return ipcRenderer.invoke('enhance:start-window', { target, crop }) as Promise<EnhanceState>
+  },
+  async toggleEnhanceWindow() {
+    return ipcRenderer.invoke('enhance:toggle-window') as Promise<EnhanceState>
+  },
+  async stopEnhanceWindow() {
+    return ipcRenderer.invoke('enhance:stop-window') as Promise<EnhanceState>
+  },
+  async chooseEnhanceComponent() {
+    return ipcRenderer.invoke('enhance:choose-component') as Promise<EnhanceState>
+  },
+  async openEnhanceVideo(file?: string) {
+    return ipcRenderer.invoke('enhance:open-video', file) as Promise<EnhanceState>
+  },
+  async stopEnhancePlayback() {
+    return ipcRenderer.invoke('enhance:stop') as Promise<EnhanceState>
+  },
+  async setEnhancePreset(preset: EnhancePreset) {
+    return ipcRenderer.invoke('enhance:set-preset', preset) as Promise<EnhanceState>
+  },
+  onEnhanceChanged(listener) {
+    const handler = (_event: Electron.IpcRendererEvent, state: EnhanceState): void =>
+      listener(state)
+    ipcRenderer.on('enhance:changed', handler)
+    return () => ipcRenderer.removeListener('enhance:changed', handler)
   },
   async getDisplaySnapshot() {
     return ipcRenderer.invoke(displayChannels.snapshot) as Promise<DisplaySnapshot>

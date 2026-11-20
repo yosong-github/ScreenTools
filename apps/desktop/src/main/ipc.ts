@@ -1,9 +1,11 @@
 import { dialog, ipcMain } from 'electron'
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron'
 import { displayChannels } from '@screentools/contracts'
-import type { ControlCommand } from '@screentools/contracts'
+import type { ControlCommand, EnhanceCrop, EnhanceWindow } from '@screentools/contracts'
 import type { ScreenToolsCore } from './core/screentools-core'
 import type { ControlService } from './services/control-service'
+import type { EnhanceService } from './services/enhance-service'
+import { isEnhancePreset } from './services/enhance-scripts'
 import type { UpdateService } from './services/update-service'
 import { setPanelModalOpen } from './window'
 
@@ -103,6 +105,63 @@ export function registerControlIpc(
   return () => {
     ipcMain.removeHandler('controls:state')
     ipcMain.removeHandler('controls:execute')
+  }
+}
+
+export function registerEnhanceIpc(
+  service: EnhanceService,
+  getWindow: () => BrowserWindow | null,
+): () => void {
+  const trusted = (event: IpcMainInvokeEvent): void => {
+    const window = getWindow()
+    if (
+      !window ||
+      window.isDestroyed() ||
+      event.sender !== window.webContents ||
+      event.senderFrame !== window.webContents.mainFrame
+    )
+      throw new Error('不允许的 IPC 来源')
+  }
+  const handlers: Record<string, (argument?: unknown) => unknown> = {
+    'enhance:state': () => service.state,
+    'enhance:list-windows': () => service.listWindows(),
+    'enhance:capture-window': (hwnd) =>
+      service.captureWindowSnapshot(typeof hwnd === 'number' ? hwnd : 0),
+    'enhance:start-window': (payload) => {
+      const { target, crop } = (payload ?? {}) as { target?: unknown; crop?: unknown }
+      if (!target || typeof target !== 'object') return service.state
+      const value = target as Partial<EnhanceWindow>
+      if (typeof value.hwnd !== 'number') return service.state
+      let cropValue: EnhanceCrop | undefined
+      if (crop && typeof crop === 'object') {
+        const candidate = crop as Partial<EnhanceCrop>
+        if (
+          typeof candidate.x === 'number' &&
+          typeof candidate.y === 'number' &&
+          typeof candidate.width === 'number' &&
+          typeof candidate.height === 'number'
+        )
+          cropValue = candidate as EnhanceCrop
+      }
+      return service.startWindowEnhance(value as EnhanceWindow, cropValue)
+    },
+    'enhance:toggle-window': () => service.toggleWindowEnhance(),
+    'enhance:stop-window': () => service.stopWindowEnhance(),
+    'enhance:choose-component': () => service.chooseComponent(),
+    'enhance:open-video': (file) =>
+      service.openVideo(typeof file === 'string' && file.trim() ? file : undefined),
+    'enhance:stop': () => service.stopPlayback(),
+    'enhance:set-preset': (preset) =>
+      isEnhancePreset(preset) ? service.setPreset(preset) : service.state,
+  }
+  for (const [channel, handler] of Object.entries(handlers)) {
+    ipcMain.handle(channel, (event, argument: unknown) => {
+      trusted(event)
+      return handler(argument)
+    })
+  }
+  return () => {
+    for (const channel of Object.keys(handlers)) ipcMain.removeHandler(channel)
   }
 }
 
